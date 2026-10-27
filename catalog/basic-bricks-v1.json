@@ -1,0 +1,42 @@
+{
+  "catalog_version": "basic-bricks-v1",
+  "coordinate_system": "stud_xy_plate_z_v1",
+  "units": {
+    "stud_pitch_mm": 8.0,
+    "plate_height_mm": 3.2,
+    "ldraw_unit_mm": 0.4,
+    "ldraw_stud_pitch_ldu": 20,
+    "ldraw_plate_height_ldu": 8
+  },
+  "colors": {
+    "0": {"name": "black", "hex": "#1B2A34"},
+    "1": {"name": "blue", "hex": "#1E5AA8"},
+    "2": {"name": "green", "hex": "#00852B"},
+    "4": {"name": "red", "hex": "#B40000"},
+    "14": {"name": "yellow", "hex": "#FAC80A"},
+    "15": {"name": "white", "hex": "#F4F4F4"}
+  },
+  "parts": {
+    "brick_1x1": {"footprint": [1, 1], "height_plates": 3, "allowed_rotations": [0], "ldraw_file": "3005.dat", "cost": 1},
+    "brick_1x2": {"footprint": [2, 1], "height_plates": 3, "allowed_rotations": [0, 90], "ldraw_file": "3004.dat", "cost": 1},
+    "brick_1x3": {"footprint": [3, 1], "height_plates": 3, "allowed_rotations": [0, 90], "ldraw_file": "3622.dat", "cost": 1},
+    "brick_1x4": {"footprint": [4, 1], "height_plates": 3, "allowed_rotations": [0, 90], "ldraw_file": "3010.dat", "cost": 1},
+    "brick_2x2": {"footprint": [2, 2], "height_plates": 3, "allowed_rotations": [0], "ldraw_file": "3003.dat", "cost": 1},
+    "brick_2x4": {"footprint": [4, 2], "height_plates": 3, "allowed_rotations": [0, 90], "ldraw_file": "3001.dat", "cost": 1}
+  },
+  "part_defaults": {
+    "supported_color_ids": ["0", "1", "2", "4", "14", "15"],
+    "studs": "all_top_cells",
+    "underside_connections": "all_cells",
+    "ldraw_native_origin": "top_center",
+    "ldraw_native_long_axis": "x",
+    "render_asset": "procedural_box"
+  },
+  "sources": {
+    "ldraw_parts_library": {
+      "url": "https://library.ldraw.org/",
+      "license": "CC BY 2.0",
+      "note": "Part files are NOT bundled in this repository. Only filenames, extents, and origin conventions are recorded. Rendering uses procedural boxes."
+    }
+  }
+}

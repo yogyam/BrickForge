@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "build_id": "fixture_two_brick",
+  "catalog_version": "basic-bricks-v1",
+  "coordinate_system": "stud_xy_plate_z_v1",
+  "generator": {"name": "fixture", "version": "1.0.0", "seed": 0, "strategy": null},
+  "constraints": {"max_pieces": 10, "bounds": {"x_studs": 4, "y_studs": 2, "z_plates": 6}, "color_id": "4"},
+  "placements": [
+    {"id": "b0001", "part_key": "brick_2x4", "x": 0, "y": 0, "z": 0, "rotation_deg": 0, "color_id": "4"},
+    {"id": "b0002", "part_key": "brick_2x2", "x": 0, "y": 0, "z": 3, "rotation_deg": 0, "color_id": "4"}
+  ],
+  "steps": [
+    {"index": 1, "added_placement_ids": ["b0001"]},
+    {"index": 2, "added_placement_ids": ["b0002"]}
+  ]
+}

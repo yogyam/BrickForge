@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrickForge Viewer</title>
+<style>
+  :root { --bg:#f6f5f2; --fg:#1b1b1b; --panel:#ffffff; --muted:#666; --accent:#b40000; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#121212; --fg:#eee; --panel:#1e1e1e; --muted:#aaa; } }
+  :root[data-theme="dark"] { --bg:#121212; --fg:#eee; --panel:#1e1e1e; --muted:#aaa; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui, sans-serif; }
+  #app { display:grid; grid-template-columns: 300px 1fr; height:100%; }
+  #panel { padding:16px; background:var(--panel); overflow:auto; border-right:1px solid #8884; }
+  #view { position:relative; }
+  canvas { display:block; width:100%; height:100%; }
+  label { display:block; margin:10px 0 4px; color:var(--muted); }
+  input[type=range] { width:100%; }
+  button { padding:6px 10px; margin-right:6px; }
+  .stat { margin:4px 0; }
+  .note { color:var(--muted); font-size:12px; margin-top:16px; }
+  @media (max-width: 700px) { #app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } #panel { border-right:0; border-bottom:1px solid #8884; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <div id="panel">
+    <h2 style="margin:0 0 8px">BrickForge</h2>
+    <label>build.json</label><input id="buildFile" type="file" accept=".json">
+    <label>voxels.json (target, optional)</label><input id="voxelFile" type="file" accept=".json">
+    <label><input id="showTarget" type="checkbox" checked> show target cells</label>
+    <label>Step <span id="stepLabel">0 / 0</span></label>
+    <input id="step" type="range" min="0" max="0" value="0">
+    <div><button id="prev">Previous</button><button id="next">Next</button><button id="all">All</button></div>
+    <div id="stats" style="margin-top:12px"></div>
+    <p class="note">The viewer draws exactly the stored placements, converted with X = x·8 mm, Y = z·3.2 mm, Z = −y·8 mm. It never renders a separately generated image. Labels state checks passed for the simplified brick model, not physical testing.</p>
+  </div>
+  <div id="view"><canvas id="c"></canvas></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const STUD = 8, PLATE = 3.2, BRICK = 3 * PLATE;
+const PARTS = { brick_1x1:[1,1], brick_1x2:[2,1], brick_1x3:[3,1], brick_1x4:[4,1], brick_2x2:[2,2], brick_2x4:[4,2] };
+const COLORS = { "0":0x1B2A34, "1":0x1E5AA8, "2":0x00852B, "4":0xB40000, "14":0xFAC80A, "15":0xF4F4F4 };
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
+const camera = new THREE.PerspectiveCamera(45, 1, 1, 5000);
+camera.position.set(200, 160, 220);
+const controls = new OrbitControls(camera, canvas);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(100, 200, 150); scene.add(sun);
+const grid = new THREE.GridHelper(16 * STUD, 16, 0x888888, 0xcccccc); scene.add(grid);
+
+let build = null, meshes = [], targetGroup = new THREE.Group();
+scene.add(targetGroup);
+
+function footprint(p) { const [w, d] = PARTS[p.part_key]; return p.rotation_deg === 90 ? [d, w] : [w, d]; }
+function sceneBox(p) {
+  const [w, d] = footprint(p);
+  const x0 = p.x, x1 = p.x + w, y0 = p.y, y1 = p.y + d, z0 = p.z, z1 = p.z + 3;
+  return { cx:(x0+x1)/2*STUD, cy:(z0+z1)/2*PLATE, cz:-(y0+y1)/2*STUD, sx:(x1-x0)*STUD, sy:(z1-z0)*PLATE, sz:(y1-y0)*STUD };
+}
+function centreScene(b) {
+  const bx = b.constraints.bounds;
+  controls.target.set(bx.x_studs * STUD / 2, bx.z_plates * PLATE / 2, -bx.y_studs * STUD / 2);
+  grid.position.set(bx.x_studs * STUD / 2, 0, -bx.y_studs * STUD / 2);
+  controls.update();
+}
+function loadBuild(b) {
+  build = b; meshes.forEach(m => scene.remove(m)); meshes = [];
+  const order = [];
+  for (const s of b.steps) for (const id of s.added_placement_ids) order.push(id);
+  const byId = Object.fromEntries(b.placements.map(p => [p.id, p]));
+  for (const id of order) {
+    const p = byId[id], box = sceneBox(p);
+    const geo = new THREE.BoxGeometry(box.sx - 0.6, box.sy - 0.4, box.sz - 0.6);
+    const mat = new THREE.MeshStandardMaterial({ color: COLORS[p.color_id] ?? 0x999999, roughness: 0.6 });
+    const m = new THREE.Mesh(geo, mat); m.position.set(box.cx, box.cy, box.cz);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.35, transparent: true }));
+    m.add(edges); m.userData.id = id; scene.add(m); meshes.push(m);
+  }
+  const slider = document.getElementById('step');
+  slider.max = b.steps.length; slider.value = b.steps.length; centreScene(b); showStep(b.steps.length);
+  const bom = {}; for (const p of b.placements) bom[p.part_key] = (bom[p.part_key] || 0) + 1;
+  document.getElementById('stats').innerHTML =
+    `<div class="stat"><b>${b.build_id}</b></div><div class="stat">${b.placements.length} pieces, cap ${b.constraints.max_pieces}</div>` +
+    `<div class="stat">generator ${b.generator.name} ${b.generator.version}${b.generator.strategy ? ' / ' + b.generator.strategy : ''}, seed ${b.generator.seed}</div>` +
+    `<div class="stat">BOM: ${Object.entries(bom).sort().map(([k, n]) => `${k} × ${n}`).join(', ')}</div>`;
+}
+function showStep(k) {
+  meshes.forEach((m, i) => { m.visible = i < k; m.material.emissive.setHex(i === k - 1 ? 0x333333 : 0x000000); });
+  document.getElementById('stepLabel').textContent = `${k} / ${meshes.length}`;
+  document.getElementById('step').value = k;
+}
+function loadVoxels(v) {
+  targetGroup.clear();
+  const geo = new THREE.BoxGeometry(STUD * 0.35, BRICK * 0.35, STUD * 0.35);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x3388ff, transparent: true, opacity: 0.5 });
+  for (const [i, j, k] of v.cells) { const m = new THREE.Mesh(geo, mat); m.position.set((i + 0.5) * STUD, (k + 0.5) * BRICK, -(j + 0.5) * STUD); targetGroup.add(m); }
+}
+const readJson = (file, cb) => { const r = new FileReader(); r.onload = () => cb(JSON.parse(r.result)); r.readAsText(file); };
+document.getElementById('buildFile').addEventListener('change', e => readJson(e.target.files[0], loadBuild));
+document.getElementById('voxelFile').addEventListener('change', e => readJson(e.target.files[0], loadVoxels));
+document.getElementById('showTarget').addEventListener('change', e => targetGroup.visible = e.target.checked);
+document.getElementById('step').addEventListener('input', e => showStep(+e.target.value));
+document.getElementById('prev').onclick = () => showStep(Math.max(0, +document.getElementById('step').value - 1));
+document.getElementById('next').onclick = () => showStep(Math.min(meshes.length, +document.getElementById('step').value + 1));
+document.getElementById('all').onclick = () => showStep(meshes.length);
+window.addEventListener('keydown', e => { if (e.key === 'ArrowRight') document.getElementById('next').click(); if (e.key === 'ArrowLeft') document.getElementById('prev').click(); });
+function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== w || canvas.height !== h) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); } }
+(function animate() { resize(); controls.update(); renderer.render(scene, camera); requestAnimationFrame(animate); })();
+</script>
+</body>
+</html>
