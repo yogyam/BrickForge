@@ -15,8 +15,9 @@ fixtures:
 
 demo: fixtures
 	uv run brickforge generate --mesh fixtures/meshes/sphere.stl --out runs/sphere
-	-uv run brickforge generate --mesh fixtures/meshes/open_box_invalid.stl --out runs/open_box_invalid
-	@echo "open viewer/index.html and load runs/sphere/build.json (and voxels.json for the target)"
+	@echo "--- intentional failure: the open box is not watertight and must be rejected (exit 1 is expected) ---"
+	-@uv run brickforge generate --mesh fixtures/meshes/open_box_invalid.stl --out runs/open_box_invalid
+	@echo "--- done. Open viewer/index.html and load runs/sphere/build.json (and voxels.json for the target) ---"
 
 clean:
 	rm -rf runs
