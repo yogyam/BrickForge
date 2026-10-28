@@ -14,6 +14,7 @@ from .generate import generate
 from .mesh import MeshError, load_mesh, normalize, occupancy_cells, voxelize
 from .plan import plan_assembly
 from .schema import Bounds, Build, Constraints
+from .stability import analyze_build
 from .validate import validate_build
 
 
@@ -77,6 +78,13 @@ def cmd_generate(args) -> int:
         _write(out / "bom.csv", bom_csv(res.build, catalog))
         _write(out / "build.ldr", ldraw_text(res.build, catalog))
         _write(out / "plan.json", _dump({"status": res.instruction_status, "steps": len(res.build.steps), **res.plan}))
+        t = time.perf_counter()
+        stab = analyze_build(res.build.placements, res.build.steps, catalog)
+        timings["stability"] = round(time.perf_counter() - t, 3)
+        _write(out / "stability.json", _dump(stab))
+        result["stability"] = {"final_stable": stab["final"]["stable"], "mode": stab["final"]["mode"], "final_utilization": stab["final"]["utilization"],
+                               "all_steps_stable": stab["all_steps_stable"], "first_unstable_step": stab["first_unstable_step"],
+                               "max_step_utilization": stab["max_step_utilization"], "label": stab["label"]}
     _write(out / "result.json", _dump(result))
     print(_dump({k: v for k, v in result.items() if k != "diagnostics"}), end="")
     return 0
@@ -103,6 +111,16 @@ def cmd_plan(args) -> int:
             return 1
         Path(args.build).write_text(planned.to_json())
     return 0 if plan.status == "planned" else 1
+
+
+def cmd_stability(args) -> int:
+    catalog = load_catalog(args.catalog)
+    build = Build.from_json(Path(args.build).read_text())
+    stab = analyze_build(build.placements, build.steps, catalog)
+    if args.out:
+        _write(Path(args.out), _dump(stab))
+    print(_dump({k: v for k, v in stab.items() if k != "per_step"}), end="")
+    return 0 if stab["final"]["stable"] else 1
 
 
 def cmd_export(args) -> int:
@@ -151,6 +169,11 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("--node-budget", type=int, default=1_000_000)
     pl.add_argument("--time-budget", type=float, default=30.0)
     pl.set_defaults(fn=cmd_plan)
+
+    st = sub.add_parser("stability", help="static force-model stability of a build.json, final and per step")
+    st.add_argument("build")
+    st.add_argument("--out", default=None, help="write full report including per-step results")
+    st.set_defaults(fn=cmd_stability)
 
     e = sub.add_parser("export", help="BOM + LDraw from a validated build.json")
     e.add_argument("build")

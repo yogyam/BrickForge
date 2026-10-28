@@ -33,10 +33,12 @@
     <h2 style="margin:0 0 8px">BrickForge</h2>
     <label>build.json</label><input id="buildFile" type="file" accept=".json">
     <label>voxels.json (target, optional)</label><input id="voxelFile" type="file" accept=".json">
+    <label>stability.json (optional)</label><input id="stabFile" type="file" accept=".json">
     <label><input id="showTarget" type="checkbox" checked> show target cells</label>
     <label>Step <span id="stepLabel">0 / 0</span></label>
     <input id="step" type="range" min="0" max="0" value="0">
     <div><button id="prev">Previous</button><button id="next">Next</button><button id="all">All</button></div>
+    <div id="stab" class="stat"></div>
     <div id="stats" style="margin-top:12px"></div>
     <p class="note">The viewer draws exactly the stored placements, converted with X = x·8 mm, Y = z·3.2 mm, Z = −y·8 mm. It never renders a separately generated image. Labels state checks passed for the simplified brick model, not physical testing.</p>
   </div>
@@ -61,7 +63,7 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.1));
 const sun = new THREE.DirectionalLight(0xffffff, 1.2); sun.position.set(100, 200, 150); scene.add(sun);
 const grid = new THREE.GridHelper(16 * STUD, 16, 0x888888, 0xcccccc); scene.add(grid);
 
-let build = null, meshes = [], targetGroup = new THREE.Group();
+let build = null, meshes = [], stab = null, targetGroup = new THREE.Group();
 scene.add(targetGroup);
 
 function footprint(p) { const [w, d] = PARTS[p.part_key]; return p.rotation_deg === 90 ? [d, w] : [w, d]; }
@@ -101,6 +103,9 @@ function showStep(k) {
   meshes.forEach((m, i) => { m.visible = i < k; m.material.emissive.setHex(i === k - 1 ? 0x333333 : 0x000000); });
   document.getElementById('stepLabel').textContent = `${k} / ${meshes.length}`;
   document.getElementById('step').value = k;
+  const el = document.getElementById('stab');
+  if (stab && k > 0 && stab.per_step[k - 1]) { const r = stab.per_step[k - 1]; el.textContent = `step ${k}: ${r.stable ? 'stable' : 'UNSTABLE (' + r.mode + ')'} under the simplified force model, tension utilisation ${r.utilization ?? 'n/a'}`; el.style.color = r.stable ? '' : 'var(--accent)'; }
+  else if (stab && k === 0) { el.textContent = stab.label; }
 }
 function loadVoxels(v) {
   targetGroup.clear();
@@ -111,6 +116,7 @@ function loadVoxels(v) {
 const readJson = (file, cb) => { const r = new FileReader(); r.onload = () => cb(JSON.parse(r.result)); r.readAsText(file); };
 document.getElementById('buildFile').addEventListener('change', e => readJson(e.target.files[0], loadBuild));
 document.getElementById('voxelFile').addEventListener('change', e => readJson(e.target.files[0], loadVoxels));
+document.getElementById('stabFile').addEventListener('change', e => readJson(e.target.files[0], s => { stab = s; showStep(+document.getElementById('step').value); }));
 document.getElementById('showTarget').addEventListener('change', e => targetGroup.visible = e.target.checked);
 document.getElementById('step').addEventListener('input', e => showStep(+e.target.value));
 document.getElementById('prev').onclick = () => showStep(Math.max(0, +document.getElementById('step').value - 1));
