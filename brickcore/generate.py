@@ -13,7 +13,8 @@ import numpy as np
 
 from .catalog import Catalog
 from .geometry import iou, occupancy_grid
-from .schema import BRICK_HEIGHT_PLATES, Build, Constraints, GeneratorInfo, Placement, Step
+from .schema import BRICK_HEIGHT_PLATES, Build, Constraints, GeneratorInfo, Placement
+from .plan import plan_assembly
 from .validate import components, validate_build
 
 GENERATOR_NAME = "greedy_v1"
@@ -46,6 +47,8 @@ class CandidateResult:
     coverage: float
     extraneous: float
     diagnostics: dict = field(default_factory=dict)
+    instruction_status: str = "none"
+    plan: dict = field(default_factory=dict)
 
 
 def _window_sums(a: np.ndarray, w: int, d: int) -> np.ndarray:
@@ -145,13 +148,14 @@ def generate(target: np.ndarray, catalog: Catalog, constraints: Constraints, see
         dropped = len(placements) - len(kept)
         # Renumber so ids stay dense and steps are the retained generation order.
         kept = [Placement(id=f"b{i + 1:04d}", part_key=p.part_key, x=p.x, y=p.y, z=p.z, rotation_deg=p.rotation_deg, color_id=p.color_id) for i, p in enumerate(kept)]
+        plan = plan_assembly(kept, catalog)
         build = Build(
             build_id=f"{build_id}_{strat.name}",
             catalog_version=catalog.version,
             generator=GeneratorInfo(name=GENERATOR_NAME, version=GENERATOR_VERSION, seed=seed, strategy=strat.name),
             constraints=constraints,
             placements=kept,
-            steps=[Step(index=i + 1, added_placement_ids=[p.id]) for i, p in enumerate(kept)],
+            steps=plan.steps,  # empty when planning did not succeed: no invented instructions
         )
         report = validate_build(build, catalog)
         occ = occupancy_grid(kept, catalog, nx, ny, layers)
@@ -162,12 +166,14 @@ def generate(target: np.ndarray, catalog: Catalog, constraints: Constraints, see
         fid = iou(occ, target)
         entry = {"strategy": strat.name, "pieces": len(kept), "dropped_disconnected": dropped, "components_before_trim": n_comps,
                  "valid": report["ok"], "iou": round(fid, 4), "coverage": round(coverage, 4), "extraneous": round(extraneous, 4),
-                 "seconds": round(time.perf_counter() - ts, 3), **diag}
+                 "instruction_status": plan.status, "seconds": round(time.perf_counter() - ts, 3), **diag}
+        if plan.status != "planned":
+            entry["plan_diagnostics"] = plan.diagnostics
         if not report["ok"]:
             entry["errors"] = [e["code"] for e in report["errors"]]
         tried.append(entry)
         if report["ok"] and kept and (best is None or fid > best.fidelity):
-            best = CandidateResult("validated_candidate", build, fid, coverage, extraneous)
+            best = CandidateResult("validated_candidate", build, fid, coverage, extraneous, instruction_status=plan.status, plan=plan.diagnostics)
     diagnostics = {"strategies": tried, "target_cells": target_cells, "grid": [nx, ny, layers], "seconds": round(time.perf_counter() - t0, 3)}
     if best is None:
         if target_cells == 0:

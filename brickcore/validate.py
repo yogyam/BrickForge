@@ -93,14 +93,18 @@ def validate_build(build: Build, catalog: Catalog) -> dict:
     if keys and not ground:
         err("no_ground_contact", "no piece touches z=0")
 
-    # Steps must partition placements exactly once, and replay must keep the assembly connected.
+    # Steps, when present, must partition placements exactly once. Replay must keep the assembly connected
+    # and every insertion path from above must be clear of previously placed pieces.
+    has_steps = bool(build.steps)
     step_ids = [i for s in build.steps for i in s.added_placement_ids]
-    if sorted(step_ids) != sorted(ids):
+    if has_steps and sorted(step_ids) != sorted(ids):
         err("steps_not_partition", "steps do not cover every placement exactly once")
+    if not has_steps and ids:
+        warnings.append({"code": "no_instructions", "message": "build has no checked assembly steps"})
     if [s.index for s in build.steps] != list(range(1, len(build.steps) + 1)):
         err("step_index", "step indices must be 1..N in order")
     placed: set[str] = set()
-    replay_ok = not errors
+    replay_ok = has_steps and not errors
     for s in build.steps:
         for pid in s.added_placement_ids:
             if pid not in bodies:
@@ -109,6 +113,10 @@ def validate_build(build: Build, catalog: Catalog) -> dict:
             attached = b.z0 == 0 or any(stud_connected(b, bodies[q]) for q in placed)
             if not attached:
                 err("replay_detached", f"step {s.index}: {pid} does not attach to the assembly", step=s.index, placement=pid)
+                replay_ok = False
+            blockers = [q for q in placed if bodies[q].z0 >= b.z1 and bodies[q].footprint_overlaps(b)]
+            if blockers:
+                err("replay_blocked", f"step {s.index}: {pid} cannot be inserted from above; blocked by {sorted(blockers)}", step=s.index, placement=pid)
                 replay_ok = False
             placed.add(pid)
 
@@ -123,5 +131,6 @@ def validate_build(build: Build, catalog: Catalog) -> dict:
         "edge_count": len(edges),  # edges are directed upper -> lower, one per connected pair
         "supports": {k: sorted(v) for k, v in supports.items()},
         "replay_ok": replay_ok,
+        "instruction_status": "planned" if replay_ok else ("none" if not has_steps else "invalid"),
         "label": "checks passed for the simplified brick model" if not errors else "structural checks failed",
     }

@@ -12,6 +12,7 @@ from .catalog import load_catalog
 from .export import bom_csv, ldraw_text
 from .generate import generate
 from .mesh import MeshError, load_mesh, normalize, occupancy_cells, voxelize
+from .plan import plan_assembly
 from .schema import Bounds, Build, Constraints
 from .validate import validate_build
 
@@ -65,7 +66,8 @@ def cmd_generate(args) -> int:
     timings["generate"] = round(time.perf_counter() - t, 3)
     result = {
         "status": res.status, "iou": round(res.fidelity, 4), "coverage": round(res.coverage, 4), "extraneous": round(res.extraneous, 4),
-        "pieces": len(res.build.placements) if res.build else 0, "timings_s": timings, "diagnostics": res.diagnostics,
+        "pieces": len(res.build.placements) if res.build else 0, "instruction_status": res.instruction_status,
+        "timings_s": timings, "diagnostics": res.diagnostics,
         "label": "checks passed for the simplified brick model" if res.build else "no valid candidate",
     }
     if res.build is not None:
@@ -74,6 +76,7 @@ def cmd_generate(args) -> int:
         _write(out / "validation.json", _dump(report))
         _write(out / "bom.csv", bom_csv(res.build, catalog))
         _write(out / "build.ldr", ldraw_text(res.build, catalog))
+        _write(out / "plan.json", _dump({"status": res.instruction_status, "steps": len(res.build.steps), **res.plan}))
     _write(out / "result.json", _dump(result))
     print(_dump({k: v for k, v in result.items() if k != "diagnostics"}), end="")
     return 0
@@ -85,6 +88,21 @@ def cmd_validate(args) -> int:
     report = validate_build(build, catalog)
     print(_dump(report), end="")
     return 0 if report["ok"] else 1
+
+
+def cmd_plan(args) -> int:
+    catalog = load_catalog(args.catalog)
+    build = Build.from_json(Path(args.build).read_text())
+    plan = plan_assembly(build.placements, catalog, node_budget=args.node_budget, time_budget_s=args.time_budget)
+    print(_dump({"status": plan.status, "steps": len(plan.steps), **plan.diagnostics}), end="")
+    if plan.status == "planned" and args.write:
+        planned = build.model_copy(update={"steps": plan.steps})
+        report = validate_build(planned, catalog)
+        if not report["ok"]:
+            print("planned order failed replay validation; not writing", file=sys.stderr)
+            return 1
+        Path(args.build).write_text(planned.to_json())
+    return 0 if plan.status == "planned" else 1
 
 
 def cmd_export(args) -> int:
@@ -126,6 +144,13 @@ def main(argv: list[str] | None = None) -> int:
     v = sub.add_parser("validate", help="validate a build.json")
     v.add_argument("build")
     v.set_defaults(fn=cmd_validate)
+
+    pl = sub.add_parser("plan", help="compute a checked assembly order for a build.json")
+    pl.add_argument("build")
+    pl.add_argument("--write", action="store_true", help="store the planned steps back into the build file")
+    pl.add_argument("--node-budget", type=int, default=1_000_000)
+    pl.add_argument("--time-budget", type=float, default=30.0)
+    pl.set_defaults(fn=cmd_plan)
 
     e = sub.add_parser("export", help="BOM + LDraw from a validated build.json")
     e.add_argument("build")

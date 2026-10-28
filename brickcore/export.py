@@ -34,8 +34,13 @@ def ldraw_text(build: Build, catalog: Catalog) -> str:
         "0 !LDRAW_ORG Unofficial_Model",
         f"0 !BRICKFORGE catalog={build.catalog_version} generator={build.generator.name}/{build.generator.version} seed={build.generator.seed}",
     ]
-    for step in build.steps:
-        for pid in step.added_placement_ids:
-            lines.append(to_ldraw(by_id[pid], catalog).line())
-        lines.append("0 STEP")
+    if build.steps:
+        for step in build.steps:
+            for pid in step.added_placement_ids:
+                lines.append(to_ldraw(by_id[pid], catalog).line())
+            lines.append("0 STEP")
+    else:
+        lines.append("0 !BRICKFORGE no checked assembly steps; parts listed in storage order")
+        for p in build.placements:
+            lines.append(to_ldraw(p, catalog).line())
     return "\n".join(lines) + "\n"
