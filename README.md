@@ -25,14 +25,18 @@ make demo       # fixtures + one success (sphere) + one intentional failure (ope
 
 ## CLI
 
+Use `./bf` instead of `uv run brickforge`: it points uv at the external virtualenv. A bare `uv run` without
+`UV_PROJECT_ENVIRONMENT` set creates a `.venv` inside the project, which iCloud then breaks. To make plain
+`uv run` work everywhere, add `export UV_PROJECT_ENVIRONMENT=$HOME/.venvs/brickforge` to your `~/.zshrc`.
+
 ```sh
-uv run brickforge fixtures                                   # write 13 procedural STL fixtures
-uv run brickforge generate --mesh fixtures/meshes/sphere.stl --out runs/sphere \
+./bf fixtures                                   # write 13 procedural STL fixtures
+./bf generate --mesh fixtures/meshes/sphere.stl --out runs/sphere \
     --size 16 16 8 --max-pieces 100 --color 4 --up +z --yaw 0 --seed 42
-uv run brickforge validate runs/sphere/build.json
-uv run brickforge plan runs/sphere/build.json --write    # recompute checked steps
-uv run brickforge stability runs/sphere/build.json       # force-model stability, final and per step
-uv run brickforge export runs/sphere/build.json --out runs/sphere/exports
+./bf validate runs/sphere/build.json
+./bf plan runs/sphere/build.json --write    # recompute checked steps
+./bf stability runs/sphere/build.json       # force-model stability, final and per step
+./bf export runs/sphere/build.json --out runs/sphere/exports
 ```
 
 `generate` writes `normalization.json`, `voxels.json`, `build.json`, `validation.json`, `plan.json`, `stability.json`, `bom.csv`,
