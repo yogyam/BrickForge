@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "brickforge": {
+      "command": "./scripts/mcp.sh",
+      "args": []
+    }
+  }
+}
