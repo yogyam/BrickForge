@@ -1,0 +1,3 @@
+#!/bin/sh
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$HOME/.venvs/brickforge}"
+exec uv run --quiet brickforge-bench "$@"

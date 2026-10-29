@@ -1,0 +1,724 @@
+{
+  "dataset": "Thingi10K",
+  "revision": "v1.5.0",
+  "mirror": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/",
+  "seed": 0,
+  "n": 40,
+  "eligibility": "CC BY / CC BY-SA / public domain; closed, manifold, single component, PWN solid; 100..200k faces",
+  "models": [
+    {
+      "file_id": "39108",
+      "thing_id": "12120",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/cb/69/fa/9c/07/Pot1.stl",
+      "name": "basic receptacles",
+      "author": "MakeALot",
+      "category": "household",
+      "tags": [
+        "bowl",
+        "featured",
+        "honeycomb",
+        "jar",
+        "openscad",
+        "pot",
+        "receptacle"
+      ],
+      "faces": 14980,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/39108.stl"
+    },
+    {
+      "file_id": "39922",
+      "thing_id": "12354",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/10/17/c0/e1/49/ALA.stl",
+      "name": "3D Initials Logo - Make your own",
+      "author": "tarturo",
+      "category": "None",
+      "tags": [
+        "3D",
+        "TinkerCAD",
+        "featured",
+        "initials",
+        "letters",
+        "makerbot",
+        "openscad"
+      ],
+      "faces": 538,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/39922.stl"
+    },
+    {
+      "file_id": "40447",
+      "thing_id": "12520",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/93/fc/57/7f/23/head.STL",
+      "name": "Toy Robot",
+      "author": "bengarvey",
+      "category": "None",
+      "tags": [
+        "featured",
+        "robot",
+        "toy"
+      ],
+      "faces": 212,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/40447.stl"
+    },
+    {
+      "file_id": "42025",
+      "thing_id": "12937",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/d6/b1/66/2b/cd/50mm1.8_lenshood.stl",
+      "name": "lens hood for canon 50mm 1.8",
+      "author": "gicks",
+      "category": "None",
+      "tags": [
+        "50mm",
+        "DSLR",
+        "camera",
+        "canon",
+        "featured",
+        "lens_hood"
+      ],
+      "faces": 19478,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/42025.stl"
+    },
+    {
+      "file_id": "42035",
+      "thing_id": "12943",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/29/29/4b/95/27/SpoolMount.stl",
+      "name": "Cord Spool For MacBook Power Supply",
+      "author": "jarvis",
+      "category": "None",
+      "tags": [
+        "3D",
+        "NewMuseumChallenge",
+        "apple",
+        "featured",
+        "macbook",
+        "makerbot",
+        "useful"
+      ],
+      "faces": 3890,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/42035.stl"
+    },
+    {
+      "file_id": "48124",
+      "thing_id": "14603",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/b9/b3/c5/c0/2a/alien_egg.stl",
+      "name": "Alien Egg",
+      "author": "WickedAndy",
+      "category": "None",
+      "tags": [
+        "alien",
+        "egg",
+        "featured",
+        "lamp",
+        "ultimaker"
+      ],
+      "faces": 78336,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/48124.stl"
+    },
+    {
+      "file_id": "53749",
+      "thing_id": "16343",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/7a/d3/0e/4b/62/hilbert_cube1.stl",
+      "name": "Hilbert Cube",
+      "author": "tbuser",
+      "category": "art",
+      "tags": [
+        "complex",
+        "dualstrusion",
+        "hilbertcube",
+        "math",
+        "pva",
+        "support"
+      ],
+      "faces": 492,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/53749.stl"
+    },
+    {
+      "file_id": "54820",
+      "thing_id": "16706",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/eb/3c/1c/ac/98/toothbrush_holder.stl",
+      "name": "Simple Toothbrush Holder",
+      "author": "sholland91",
+      "category": "None",
+      "tags": [
+        "bathroom",
+        "furniture",
+        "holder",
+        "simple",
+        "toothbrush",
+        "useful"
+      ],
+      "faces": 4016,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/54820.stl"
+    },
+    {
+      "file_id": "56630",
+      "thing_id": "17336",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/57/b1/ee/06/9d/earthmap.stl",
+      "name": "Textured Earth",
+      "author": "bld",
+      "category": "None",
+      "tags": [
+        "Earth",
+        "geography",
+        "github",
+        "globe"
+      ],
+      "faces": 122880,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/56630.stl"
+    },
+    {
+      "file_id": "61192",
+      "thing_id": "19066",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/cf/46/9f/94/f5/wing.stl",
+      "name": "Printed Paper WindMill v0",
+      "author": "aubenc",
+      "category": "None",
+      "tags": [
+        "openscad",
+        "paper_windmill",
+        "parametric",
+        "pinwheel",
+        "toy",
+        "windmill"
+      ],
+      "faces": 756,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/61192.stl"
+    },
+    {
+      "file_id": "69537",
+      "thing_id": "22668",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/8c/3c/8c/8c/cc/mralligator_fixed.stl",
+      "name": "Classic style letter scale",
+      "author": "maakit",
+      "category": "household",
+      "tags": [
+        "letter",
+        "letter-scale",
+        "measure",
+        "openscad",
+        "scale",
+        "tool",
+        "useful",
+        "weight"
+      ],
+      "faces": 364,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/69537.stl"
+    },
+    {
+      "file_id": "70559",
+      "thing_id": "23029",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/77/a3/19/9b/2d/hollow_pig.stl",
+      "name": "Lucky Pig",
+      "author": "pmoews",
+      "category": "models",
+      "tags": [
+        "animal",
+        "pig",
+        "scan"
+      ],
+      "faces": 56304,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/70559.stl"
+    },
+    {
+      "file_id": "71307",
+      "thing_id": "23398",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/6c/a7/72/05/8c/slangeholder_lille_KT.stl",
+      "name": "straw holder &Atilde;&tilde;45.3 mm can size",
+      "author": "Rasle500",
+      "category": "household",
+      "tags": [],
+      "faces": 2134,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/71307.stl"
+    },
+    {
+      "file_id": "75090",
+      "thing_id": "24908",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/9b/fe/bc/68/6b/head_01.stl",
+      "name": "Robots",
+      "author": "Oblomobka",
+      "category": "toys-and-games",
+      "tags": [
+        "robot",
+        "toy"
+      ],
+      "faces": 14018,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/75090.stl"
+    },
+    {
+      "file_id": "75651",
+      "thing_id": "25145",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/43/2d/ac/38/5f/robin_FINAL.stl",
+      "name": "On Making Things Matter",
+      "author": "Moceri",
+      "category": "models",
+      "tags": [
+        "3D_Scan",
+        "Kinect",
+        "head",
+        "moceri",
+        "reconstructme"
+      ],
+      "faces": 47972,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/75651.stl"
+    },
+    {
+      "file_id": "80597",
+      "thing_id": "27065",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/ce/27/df/16/f6/BlueWhale.stl",
+      "name": "Escape From Leviathan",
+      "author": "MakerBot",
+      "category": "art",
+      "tags": [
+        "3D",
+        "bakutis",
+        "diorama",
+        "jason_bakutis",
+        "jbakutis",
+        "jonah",
+        "makerbot",
+        "scene"
+      ],
+      "faces": 43994,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/80597.stl"
+    },
+    {
+      "file_id": "81589",
+      "thing_id": "27410",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/96/94/23/3b/df/hannyaFlattened.stl",
+      "name": "Hannya Mask 01",
+      "author": "MyDogJustice",
+      "category": "art",
+      "tags": [
+        "3D",
+        "Devil",
+        "Japanese",
+        "art",
+        "demon",
+        "featured",
+        "hannya",
+        "mask"
+      ],
+      "faces": 167332,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/81589.stl"
+    },
+    {
+      "file_id": "87521",
+      "thing_id": "29789",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/60/7e/3e/a3/32/walnutsta.stl",
+      "name": "Action Hero Mashups",
+      "author": "bwevans",
+      "category": "models",
+      "tags": [
+        "Apress",
+        "Practical_3D_Printers",
+        "creatures",
+        "mashup"
+      ],
+      "faces": 75894,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/87521.stl"
+    },
+    {
+      "file_id": "91350",
+      "thing_id": "31343",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/89/38/33/cb/29/tetrahedron_on_sphere.stl",
+      "name": "Decorating Spheres",
+      "author": "pmoews",
+      "category": "art",
+      "tags": [
+        "openscad"
+      ],
+      "faces": 6430,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/91350.stl"
+    },
+    {
+      "file_id": "91452",
+      "thing_id": "31392",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/4c/62/bc/d9/57/HeadLoop_5pt6inx6pt9in_X1_1330hdphns.stl",
+      "name": "13:30 Printable Headphones",
+      "author": "jmabry",
+      "category": "gadgets",
+      "tags": [
+        "headphones"
+      ],
+      "faces": 23318,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/91452.stl"
+    },
+    {
+      "file_id": "93881",
+      "thing_id": "32413",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/64/3e/13/f3/8f/20120925D_Antikythera01.stl",
+      "name": "Antikythera Mechanism",
+      "author": "CosmoWenman",
+      "category": "art",
+      "tags": [],
+      "faces": 24170,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/93881.stl"
+    },
+    {
+      "file_id": "100070",
+      "thing_id": "34840",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/3d/db/b5/8f/e5/head.STL",
+      "name": "Smiley Cube Man",
+      "author": "FabLabSeoul",
+      "category": "3d-printing",
+      "tags": [
+        "3D",
+        "LulzBot",
+        "cube",
+        "makerbot",
+        "man",
+        "similey",
+        "smiley_cube_man",
+        "toy"
+      ],
+      "faces": 5030,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/100070.stl"
+    },
+    {
+      "file_id": "100894",
+      "thing_id": "35167",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/89/98/4b/81/3a/Light.stl",
+      "name": "Tardis with drawers",
+      "author": "MakeALot",
+      "category": "household",
+      "tags": [
+        "LulzBot",
+        "doctor_who",
+        "drawers",
+        "storage",
+        "tardis"
+      ],
+      "faces": 5820,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/100894.stl"
+    },
+    {
+      "file_id": "105120",
+      "thing_id": "36873",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/41/0e/c9/28/49/TurkeyScaled.stl",
+      "name": "Turkey Cutter for Jellied Cranberry Sauce",
+      "author": "kencaid",
+      "category": "household",
+      "tags": [
+        "3D",
+        "turkey_cutter"
+      ],
+      "faces": 1968,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/105120.stl"
+    },
+    {
+      "file_id": "108578",
+      "thing_id": "38145",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/8d/86/5a/06/82/Big_Animal_Ornament.stl",
+      "name": "Ornaments for Children&#039;s Party",
+      "author": "pmoews",
+      "category": "art",
+      "tags": [
+        "household",
+        "kitchen",
+        "openscad"
+      ],
+      "faces": 26314,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/108578.stl"
+    },
+    {
+      "file_id": "108884",
+      "thing_id": "38262",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/ed/32/63/5f/97/Box_Housing_Tall.stl",
+      "name": "Solar Powered Stereo",
+      "author": "OpenSourceClassroom",
+      "category": "hobby",
+      "tags": [],
+      "faces": 27652,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/108884.stl"
+    },
+    {
+      "file_id": "110201",
+      "thing_id": "38787",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/2f/63/ad/9e/6f/Motor_Holder_Bottom.STL",
+      "name": "Uniform and scalable reduction gear (1:256)",
+      "author": "mattheus",
+      "category": "tools",
+      "tags": [
+        "3D",
+        "Gear",
+        "Rome_Gear",
+        "education",
+        "gearbox",
+        "gears",
+        "modular",
+        "motor"
+      ],
+      "faces": 528,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/110201.stl"
+    },
+    {
+      "file_id": "111878",
+      "thing_id": "39424",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/6b/62/59/b6/39/sierpinski_x4_large.stl",
+      "name": "Octahedral Symmetry on a Sphere",
+      "author": "pmoews",
+      "category": "art",
+      "tags": [
+        "openscad"
+      ],
+      "faces": 40476,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/111878.stl"
+    },
+    {
+      "file_id": "113134",
+      "thing_id": "39921",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/c7/e4/ba/7a/0c/caseShort.stl",
+      "name": "Compact solar charger / flashlight",
+      "author": "dkennell",
+      "category": "gadgets",
+      "tags": [
+        "photovoltaic",
+        "solar"
+      ],
+      "faces": 2170,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/113134.stl"
+    },
+    {
+      "file_id": "130960",
+      "thing_id": "49033",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/5f/84/91/13/6a/10-29-10000.STL",
+      "name": "Fokker DR.1 Triplane",
+      "author": "DigitalTargeter",
+      "category": "models",
+      "tags": [
+        "Fighter",
+        "PLA",
+        "faberdashery",
+        "fokker",
+        "model",
+        "plane",
+        "red_baron",
+        "triplane"
+      ],
+      "faces": 7650,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/130960.stl"
+    },
+    {
+      "file_id": "144106",
+      "thing_id": "56209",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/6f/b8/56/56/02/flexcoupling_you_need_8.stl",
+      "name": "Customizable Necktie",
+      "author": "Keenan",
+      "category": "fashion",
+      "tags": [
+        "Customizer_Challenge",
+        "customizable",
+        "customizer",
+        "flexible",
+        "necktie",
+        "tie",
+        "wearable"
+      ],
+      "faces": 292,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/144106.stl"
+    },
+    {
+      "file_id": "200212",
+      "thing_id": "90391",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/35/db/ea/d4/48/water_fancy_tab.stl",
+      "name": "water-fancy-tab",
+      "author": "romanjurt",
+      "category": "household",
+      "tags": [
+        "FabLab",
+        "bath",
+        "ultimaker",
+        "useful"
+      ],
+      "faces": 184,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/200212.stl"
+    },
+    {
+      "file_id": "225935",
+      "thing_id": "106595",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/7c/67/ab/4d/ae/ankle_left.stl",
+      "name": "Tardis Transformer toy",
+      "author": "Ellindsey",
+      "category": "toys-and-games",
+      "tags": [
+        "doctor_who",
+        "mechanical",
+        "robot",
+        "tardis",
+        "tardis_prime",
+        "toy",
+        "transformer"
+      ],
+      "faces": 482,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/225935.stl"
+    },
+    {
+      "file_id": "265728",
+      "thing_id": "22628",
+      "license": "Creative Commons - Attribution",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/9c/80/2d/c4/56/Femur.stl",
+      "name": "Anatomic Human Foot & Lower Extremity Version 2.0",
+      "author": "DrGlassDPM",
+      "category": "learning",
+      "tags": [
+        "3D",
+        "Bone",
+        "Freeside",
+        "Freeside_Atlanta",
+        "Lightwave",
+        "Lightwave_3D",
+        "Newtek",
+        "anatomy"
+      ],
+      "faces": 7488,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/265728.stl"
+    },
+    {
+      "file_id": "567026",
+      "thing_id": "321624",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/5f/16/ec/4c/4c/ALT_PortaPi_Case_Bottom.STL",
+      "name": "PortaBerry Pi (Handheld Raspberry Pi Emulator)",
+      "author": "3Derp",
+      "category": "gadgets",
+      "tags": [
+        "Handheld_portal_device",
+        "Pi",
+        "Raspberry_Pi",
+        "Retro_Pie",
+        "Video_games",
+        "gaming",
+        "handheld",
+        "portable"
+      ],
+      "faces": 2682,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/567026.stl"
+    },
+    {
+      "file_id": "966906",
+      "thing_id": "601433",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/1e/fc/1c/55/39/Stego_MudBase.stl",
+      "name": "Stegosaurus Footprint",
+      "author": "Curriculum",
+      "category": "None",
+      "tags": [
+        "academy",
+        "archeology",
+        "education",
+        "learning"
+      ],
+      "faces": 127334,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/966906.stl"
+    },
+    {
+      "file_id": "1130077",
+      "thing_id": "703254",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/af/5e/ad/74/5b/projector_part1.stl",
+      "name": "Universal Projector Leveller",
+      "author": "westhouse",
+      "category": "household",
+      "tags": [
+        "audio",
+        "leveller",
+        "movie",
+        "projector",
+        "video"
+      ],
+      "faces": 254,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/1130077.stl"
+    },
+    {
+      "file_id": "1335002",
+      "thing_id": "784951",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/72/00/e6/b7/c4/Bisymmetric_Hendecahedron_5mm_v1-0.STL",
+      "name": "Magnetic Bisymmetric Hendecahedrons",
+      "author": "walter",
+      "category": "toys-and-games",
+      "tags": [
+        "magnet",
+        "neodymium",
+        "polyhedra",
+        "puzzle",
+        "toy"
+      ],
+      "faces": 187740,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/1335002.stl"
+    },
+    {
+      "file_id": "1417953",
+      "thing_id": "896832",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/d5/cd/aa/96/51/Axelv1.stl",
+      "name": "Bicycle (Beta)",
+      "author": "MiniStyx",
+      "category": "models",
+      "tags": [
+        "Ninjaflex",
+        "bicycle",
+        "bike",
+        "flexible",
+        "tire",
+        "tpe",
+        "wheel"
+      ],
+      "faces": 1556,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/1417953.stl"
+    },
+    {
+      "file_id": "1514900",
+      "thing_id": "935144",
+      "license": "Creative Commons - Attribution - Share Alike",
+      "link": "https://thingiverse-production-new.s3.amazonaws.com/assets/0c/33/fd/eb/b7/square_wave_desk_tidy.stl",
+      "name": "WAVE desktop tidy collection",
+      "author": "tone001",
+      "category": "household",
+      "tags": [
+        "desk",
+        "holder",
+        "minimalist",
+        "pens",
+        "sawtooth",
+        "scalloped",
+        "sine",
+        "square"
+      ],
+      "faces": 7066,
+      "source": "https://huggingface.co/datasets/Thingi10K/Thingi10K/resolve/v1.5.0/raw_meshes/1514900.stl"
+    }
+  ]
+}

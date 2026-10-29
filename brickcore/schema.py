@@ -29,7 +29,7 @@ class Bounds(BaseModel):
 
 class Constraints(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    max_pieces: int = Field(ge=1, le=100)
+    max_pieces: int = Field(ge=1, le=200)  # product default 100; research sweeps go to 200
     bounds: Bounds
     color_id: str
 

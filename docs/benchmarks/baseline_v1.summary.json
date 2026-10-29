@@ -1,0 +1,56 @@
+{
+  "by_generator_budget": [
+    {
+      "generator": "greedy_v1",
+      "budget": 50,
+      "cases": 53,
+      "input_failed": 1,
+      "valid_rate": 0.962,
+      "planned_rate": 0.962,
+      "stable_rate": 0.925,
+      "mean_iou": 0.6331,
+      "median_iou": 0.6982,
+      "mean_coverage": 0.6611,
+      "mean_pieces": 28.4,
+      "mean_iou_per_piece_x100": 4.109,
+      "mean_generate_s": 0.042,
+      "expected_met": 9,
+      "expected_total": 13
+    },
+    {
+      "generator": "greedy_v1",
+      "budget": 100,
+      "cases": 53,
+      "input_failed": 1,
+      "valid_rate": 0.962,
+      "planned_rate": 0.962,
+      "stable_rate": 0.925,
+      "mean_iou": 0.7093,
+      "median_iou": 0.8925,
+      "mean_coverage": 0.7316,
+      "mean_pieces": 37.3,
+      "mean_iou_per_piece_x100": 4.07,
+      "mean_generate_s": 0.061,
+      "expected_met": 13,
+      "expected_total": 13
+    },
+    {
+      "generator": "greedy_v1",
+      "budget": 200,
+      "cases": 53,
+      "input_failed": 1,
+      "valid_rate": 0.962,
+      "planned_rate": 0.962,
+      "stable_rate": 0.925,
+      "mean_iou": 0.7185,
+      "median_iou": 0.913,
+      "mean_coverage": 0.7406,
+      "mean_pieces": 39.1,
+      "mean_iou_per_piece_x100": 4.068,
+      "mean_generate_s": 0.066,
+      "expected_met": 13,
+      "expected_total": 13
+    }
+  ],
+  "records": 159
+}
