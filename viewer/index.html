@@ -51,6 +51,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const STUD = 8, PLATE = 3.2, BRICK = 3 * PLATE;
 const PARTS = { brick_1x1:[1,1], brick_1x2:[2,1], brick_1x3:[3,1], brick_1x4:[4,1], brick_2x2:[2,2], brick_2x4:[4,2] };
 const COLORS = { "0":0x1B2A34, "1":0x1E5AA8, "2":0x00852B, "4":0xB40000, "14":0xFAC80A, "15":0xF4F4F4 };
+// --- pure transform, tested against brickcore.transforms.to_scene by tests/test_inputs_viewer_timeouts.py ---
+function footprint(p) { const [w, d] = PARTS[p.part_key]; return p.rotation_deg === 90 ? [d, w] : [w, d]; }
+function sceneBox(p) {
+  const [w, d] = footprint(p);
+  const x0 = p.x, x1 = p.x + w, y0 = p.y, y1 = p.y + d, z0 = p.z, z1 = p.z + 3;
+  return { cx:(x0+x1)/2*STUD, cy:(z0+z1)/2*PLATE, cz:-(y0+y1)/2*STUD, sx:(x1-x0)*STUD, sy:(z1-z0)*PLATE, sz:(y1-y0)*STUD };
+}
+// --- end pure transform ---
 
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -66,12 +74,6 @@ const grid = new THREE.GridHelper(16 * STUD, 16, 0x888888, 0xcccccc); scene.add(
 let build = null, meshes = [], stab = null, targetGroup = new THREE.Group();
 scene.add(targetGroup);
 
-function footprint(p) { const [w, d] = PARTS[p.part_key]; return p.rotation_deg === 90 ? [d, w] : [w, d]; }
-function sceneBox(p) {
-  const [w, d] = footprint(p);
-  const x0 = p.x, x1 = p.x + w, y0 = p.y, y1 = p.y + d, z0 = p.z, z1 = p.z + 3;
-  return { cx:(x0+x1)/2*STUD, cy:(z0+z1)/2*PLATE, cz:-(y0+y1)/2*STUD, sx:(x1-x0)*STUD, sy:(z1-z0)*PLATE, sz:(y1-y0)*STUD };
-}
 function centreScene(b) {
   const bx = b.constraints.bounds;
   controls.target.set(bx.x_studs * STUD / 2, bx.z_plates * PLATE / 2, -bx.y_studs * STUD / 2);

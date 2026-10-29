@@ -65,7 +65,7 @@ def ldraw_body_bounds(lp: LDrawPlacement, p: Placement, catalog: Catalog) -> Bod
         Y = m[1][0] * px + m[1][1] * py + m[1][2] * pz + lp.y
         Z = m[2][0] * px + m[2][1] * py + m[2][2] * pz + lp.z
         pts.append((X, Y, Z))
-    xs, ys, zs = zip(*pts)
+    xs, ys, zs = zip(*pts, strict=True)
     x0, x1 = min(xs) / s, max(xs) / s
     y0, y1 = min(zs) / s, max(zs) / s
     z0, z1 = -max(ys) / h, -min(ys) / h

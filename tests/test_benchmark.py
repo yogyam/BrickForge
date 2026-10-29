@@ -53,4 +53,4 @@ def test_procedural_benchmark_runs_and_summarises(tmp_path):
     assert rows[("greedy_v1", 100)]["cases"] == 4 and 0 < rows[("greedy_v1", 100)]["valid_rate"] < 1
     md = B.to_markdown(summary, records)
     assert "proc_cube" in md and "greedy_v1@100" in md
-    assert all(json.loads(l)["case"] for l in out.read_text().splitlines())
+    assert all(json.loads(line)["case"] for line in out.read_text().splitlines())

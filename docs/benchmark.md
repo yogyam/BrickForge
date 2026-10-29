@@ -25,6 +25,12 @@ seconds, hardware, git commit, catalog version.
 ./bench summarize docs/benchmarks/baseline_v1.jsonl
 ```
 
+## Audit
+`./bench audit docs/benchmarks/baseline_v1.jsonl` regenerates every non-failed record, validates it with the
+authoritative validator, recomputes IoU from occupancy, and compares status, piece count, validity and IoU
+with what the JSONL claims. Any mismatch fails the audit. Run it after any change to brickcore to prove the
+frozen baseline is still reproducible, and before quoting numbers in the paper.
+
 ## Rules
 - Report every case, including failures. Never evaluate only curated successes.
 - Learned generators register under a new name and run with identical cases, budgets and seeds.

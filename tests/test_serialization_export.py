@@ -23,5 +23,5 @@ def test_bom_counts_equal_placements(two_brick, catalog):
 
 def test_ldraw_has_one_part_line_and_one_step_per_placement(two_brick, catalog):
     lines = ldraw_text(two_brick, catalog).splitlines()
-    assert sum(l.startswith("1 ") for l in lines) == len(two_brick.placements)
-    assert sum(l == "0 STEP" for l in lines) == len(two_brick.steps)
+    assert sum(line.startswith("1 ") for line in lines) == len(two_brick.placements)
+    assert sum(line == "0 STEP" for line in lines) == len(two_brick.steps)

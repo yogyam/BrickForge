@@ -24,7 +24,7 @@ import numpy as np
 from scipy.optimize import linprog
 
 from .catalog import Catalog
-from .geometry import Body, body_of, stud_connected
+from .geometry import body_of, stud_connected
 from .schema import Placement, Step
 
 MODEL_NAME = "stud_joint_lp_v1"
@@ -43,6 +43,9 @@ class StabilityParams:
         return self.brick_2x4_mass_g / 8 * self.gravity_m_s2  # grams * m/s^2 = mN
 
 
+DEFAULT_PARAMS = StabilityParams()
+
+
 def _points(cells: list[tuple[int, int]], pitch: float, off: float) -> list[tuple[float, float]]:
     pts = []
     for x, y in cells:
@@ -51,7 +54,7 @@ def _points(cells: list[tuple[int, int]], pitch: float, off: float) -> list[tupl
     return pts
 
 
-def analyze(placements: list[Placement], catalog: Catalog, params: StabilityParams = StabilityParams()) -> dict:
+def analyze(placements: list[Placement], catalog: Catalog, params: StabilityParams = DEFAULT_PARAMS) -> dict:
     """Minimum tension utilisation for one assembly state. Returns stable flag, utilisation, worst joint."""
     if not placements:
         return {"stable": True, "utilization": 0.0, "worst_joint": None, "pieces": 0}
@@ -69,13 +72,15 @@ def analyze(placements: list[Placement], catalog: Catalog, params: StabilityPara
         bu = bodies[u]
         if bu.z0 == 0:
             for x, y in _points(bu.cells, pitch, params.sub_point_offset_mm):
-                cols.append((idx[u], None, x, y, False)); joint_label.append(None)
-        for l in ids:
-            if u != l and stud_connected(bu, bodies[l]):
-                bl = bodies[l]
+                cols.append((idx[u], None, x, y, False))
+                joint_label.append(None)
+        for low in ids:
+            if u != low and stud_connected(bu, bodies[low]):
+                bl = bodies[low]
                 shared = [(x, y) for x in range(max(bu.x0, bl.x0), min(bu.x1, bl.x1)) for y in range(max(bu.y0, bl.y0), min(bu.y1, bl.y1))]
                 for x, y in _points(shared, pitch, params.sub_point_offset_mm):
-                    cols.append((idx[u], idx[l], x, y, True)); joint_label.append((u, l))
+                    cols.append((idx[u], idx[low], x, y, True))
+                    joint_label.append((u, low))
     m = len(cols)
     A_eq = np.zeros((3 * n, m + 1))
     b_eq = np.zeros(3 * n)
@@ -83,19 +88,26 @@ def analyze(placements: list[Placement], catalog: Catalog, params: StabilityPara
     for i, pid in enumerate(ids):
         b = bodies[pid]
         b_eq[3 * i] = (b.x1 - b.x0) * (b.y1 - b.y0) * params.weight_per_cell_mN
-    for j, (u, l, x, y, _) in enumerate(cols):
+    for j, (u, low, x, y, _) in enumerate(cols):
         cx, cy = centres[u]
-        A_eq[3 * u, j] += 1.0; A_eq[3 * u + 1, j] += x - cx; A_eq[3 * u + 2, j] += y - cy
-        if l is not None:
-            cx, cy = centres[l]
-            A_eq[3 * l, j] -= 1.0; A_eq[3 * l + 1, j] -= x - cx; A_eq[3 * l + 2, j] -= y - cy
+        A_eq[3 * u, j] += 1.0
+        A_eq[3 * u + 1, j] += x - cx
+        A_eq[3 * u + 2, j] += y - cy
+        if low is not None:
+            cx, cy = centres[low]
+            A_eq[3 * low, j] -= 1.0
+            A_eq[3 * low + 1, j] -= x - cx
+            A_eq[3 * low + 2, j] -= y - cy
     # Inequalities: -f_j - t*cap <= 0 for joint points. Bounds: ground points >= 0, joint points free, t >= 0.
     joint_cols = [j for j, c in enumerate(cols) if c[4]]
-    A_ub = np.zeros((len(joint_cols), m + 1)); b_ub = np.zeros(len(joint_cols))
+    A_ub = np.zeros((len(joint_cols), m + 1))
+    b_ub = np.zeros(len(joint_cols))
     for r, j in enumerate(joint_cols):
-        A_ub[r, j] = -1.0; A_ub[r, m] = -cap_point
+        A_ub[r, j] = -1.0
+        A_ub[r, m] = -cap_point
     bounds = [(None, None) if c[4] else (0, None) for c in cols] + [(0, None)]
-    c = np.zeros(m + 1); c[m] = 1.0
+    c = np.zeros(m + 1)
+    c[m] = 1.0
     res = linprog(c, A_ub=A_ub if joint_cols else None, b_ub=b_ub if joint_cols else None, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method="highs")
     if not res.success:
         # No equilibrium exists even with unlimited clutch: the structure topples (ground gives compression only).
@@ -111,7 +123,7 @@ def analyze(placements: list[Placement], catalog: Catalog, params: StabilityPara
     return {"stable": stable, "mode": "ok" if stable else "clutch_exceeded", "utilization": round(t, 4), "worst_joint": worst, "pieces": n}
 
 
-def analyze_build(placements: list[Placement], steps: list[Step], catalog: Catalog, params: StabilityParams = StabilityParams()) -> dict:
+def analyze_build(placements: list[Placement], steps: list[Step], catalog: Catalog, params: StabilityParams = DEFAULT_PARAMS) -> dict:
     """Final-state analysis plus one analysis per assembly prefix when steps are present."""
     final = analyze(placements, catalog, params)
     by_id = {p.id: p for p in placements}

@@ -40,7 +40,9 @@ Use `./bf` instead of `uv run brickforge`: it points uv at the external virtuale
 ```
 
 `generate` writes `normalization.json`, `voxels.json`, `build.json`, `validation.json`, `plan.json`, `stability.json`, `bom.csv`,
-`build.ldr`, and `result.json`. `result.json` carries one of `validated_candidate`, `partial_candidate`,
+`build.ldr`, and `result.json`. Parsing (`--parse-timeout`, default 60 s) and search (`--generate-timeout`, default
+30 s) have independent wall-clock limits; a parse timeout fails with `worker_timeout`, a search timeout returns the
+best candidate found so far and records `search_aborted`. `result.json` carries one of `validated_candidate`, `partial_candidate`,
 `no_valid_candidate`, or `failed` with an error code, plus IoU, coverage, extraneous occupancy, per-stage
 timings, and per-strategy diagnostics. A failed or partial result never produces an invented build.
 
@@ -75,7 +77,7 @@ target. Two of those tiny fragments topple under the force model (2 and 5 pieces
 sign that the generator should consider stability, which it currently does not. Grid resolution is the main
 lever for thin objects and is a documented limitation, not something to tune after the freeze.
 
-Reproduce: `make bench` (downloads ~100 MB of meshes once into `data/`, never committed).
+Reproduce: `make bench` (downloads ~100 MB of meshes once into `data/`, never committed). Verify: `./bench audit docs/benchmarks/baseline_v1.jsonl`.
 
 ## Fixture results (M1, default 16x16x8 grid, 100-piece cap, M5 Pro)
 

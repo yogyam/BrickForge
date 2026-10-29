@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
 import sys
+import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 from . import __version__
@@ -27,6 +30,30 @@ def _dump(obj) -> str:
     return json.dumps(obj, indent=2, sort_keys=True) + "\n"
 
 
+class StageTimeout(Exception):
+    pass
+
+
+@contextmanager
+def _deadline(seconds: float | None, stage: str):
+    """Wall-clock limit for a stage. Uses SIGALRM, so it only applies on the main thread of a POSIX process;
+    elsewhere it is a no-op and the stage runs unbounded (documented limitation)."""
+    if not seconds or threading.current_thread() is not threading.main_thread() or not hasattr(signal, "setitimer"):
+        yield
+        return
+
+    def _raise(signum, frame):
+        raise StageTimeout(stage)
+
+    previous = signal.signal(signal.SIGALRM, _raise)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+
 def cmd_fixtures(args) -> int:
     from .fixtures import write_fixtures
     for p in write_fixtures(Path(args.out)):
@@ -46,16 +73,22 @@ def cmd_generate(args) -> int:
     timings = {}
     t = time.perf_counter()
     try:
-        mesh, meta = load_mesh(Path(args.mesh))
-        timings["load"] = round(time.perf_counter() - t, 3)
-        t = time.perf_counter()
-        mesh, norm = normalize(mesh, bounds, catalog, up=args.up, yaw_deg=args.yaw)
-        timings["normalize"] = round(time.perf_counter() - t, 3)
-        t = time.perf_counter()
-        occ = voxelize(mesh, bounds, catalog)
-        timings["voxelize"] = round(time.perf_counter() - t, 3)
+        with _deadline(args.parse_timeout, "parse"):
+            mesh, meta = load_mesh(Path(args.mesh))
+            timings["load"] = round(time.perf_counter() - t, 3)
+            t = time.perf_counter()
+            mesh, norm = normalize(mesh, bounds, catalog, up=args.up, yaw_deg=args.yaw)
+            timings["normalize"] = round(time.perf_counter() - t, 3)
+            t = time.perf_counter()
+            occ = voxelize(mesh, bounds, catalog)
+            timings["voxelize"] = round(time.perf_counter() - t, 3)
     except MeshError as e:
         result = {"status": "failed", "error_code": e.code, "message": e.message, "mesh": str(args.mesh)}
+        _write(out / "result.json", _dump(result))
+        print(_dump(result), end="")
+        return 1
+    except StageTimeout as e:
+        result = {"status": "failed", "error_code": "worker_timeout", "stage": str(e), "message": f"{e} stage exceeded {args.parse_timeout} s", "mesh": str(args.mesh)}
         _write(out / "result.json", _dump(result))
         print(_dump(result), end="")
         return 1
@@ -63,11 +96,12 @@ def cmd_generate(args) -> int:
     _write(out / "voxels.json", _dump({"grid": list(occ.shape), "cells": occupancy_cells(occ)}))
     build_id = args.build_id or f"build_{meta['source_sha256'][:8]}_{args.max_pieces}"
     t = time.perf_counter()
-    res = generate(occ, catalog, constraints, seed=args.seed, build_id=build_id)
+    res = generate(occ, catalog, constraints, seed=args.seed, build_id=build_id, time_budget_s=args.generate_timeout)
     timings["generate"] = round(time.perf_counter() - t, 3)
     result = {
         "status": res.status, "iou": round(res.fidelity, 4), "coverage": round(res.coverage, 4), "extraneous": round(res.extraneous, 4),
         "pieces": len(res.build.placements) if res.build else 0, "instruction_status": res.instruction_status,
+        "search_aborted": res.diagnostics.get("aborted"),
         "timings_s": timings, "diagnostics": res.diagnostics,
         "label": "checks passed for the simplified brick model" if res.build else "no valid candidate",
     }
@@ -157,6 +191,8 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--yaw", type=int, default=0, help="rotation about up in 90 degree steps")
     g.add_argument("--seed", type=int, default=42)
     g.add_argument("--build-id", default=None)
+    g.add_argument("--parse-timeout", type=float, default=60.0, help="seconds for load+normalize+voxelize before worker_timeout")
+    g.add_argument("--generate-timeout", type=float, default=30.0, help="seconds of search before returning the best candidate so far")
     g.set_defaults(fn=cmd_generate)
 
     v = sub.add_parser("validate", help="validate a build.json")

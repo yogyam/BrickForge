@@ -1,8 +1,5 @@
 import json
 
-import numpy as np
-import pytest
-
 from brickcore.cli import main
 from brickcore.generate import generate
 from brickcore.mesh import load_mesh, normalize, voxelize
@@ -74,7 +71,7 @@ def test_cli_success_writes_all_artifacts(fixture_meshes, tmp_path):
     build = Build.from_json((out / "build.json").read_text())
     assert json.loads((out / "validation.json").read_text())["ok"]
     assert main(["validate", str(out / "build.json")]) == 0
-    assert sum(1 for l in (out / "build.ldr").read_text().splitlines() if l.startswith("1 ")) == len(build.placements)
+    assert sum(1 for line in (out / "build.ldr").read_text().splitlines() if line.startswith("1 ")) == len(build.placements)
 
 
 def test_cli_intentional_failure_on_open_mesh(fixture_meshes, tmp_path):

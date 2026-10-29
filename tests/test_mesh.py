@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from brickcore.catalog import load_catalog
 from brickcore.mesh import MeshError, load_mesh, normalize, voxelize
 from brickcore.schema import Bounds
 

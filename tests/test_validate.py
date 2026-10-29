@@ -1,6 +1,6 @@
-import copy
 
 import pytest
+from pydantic import ValidationError
 
 from brickcore.schema import Build, Placement, Step
 from brickcore.validate import validate_build
@@ -71,5 +71,5 @@ def test_steps_must_partition_placements(two_brick, catalog):
 def test_schema_rejects_unknown_fields(two_brick):
     raw = two_brick.model_dump()
     raw["placements"][0]["extra"] = 1
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Build.model_validate(raw)

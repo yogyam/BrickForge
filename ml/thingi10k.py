@@ -99,3 +99,15 @@ def download_subset(mesh_dir: Path = DATA_DIR / "meshes") -> dict:
         manifest["models"].append({**m, "path": str(local.relative_to(ROOT)), "sha256": sha, "bytes": local.stat().st_size})
     (DATA_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+def held_out_thing_ids(subset_file: Path = SUBSET_FILE) -> set[str]:
+    """Thingiverse thing ids in the frozen held-out subset. Any training pool must exclude these entirely,
+    including other files uploaded under the same thing (rotations, variants, remixes of one upload)."""
+    return {m["thing_id"] for m in json.loads(subset_file.read_text())["models"]}
+
+
+def training_pool(meta: dict[str, list[dict]], exclude_things: set[str], max_faces: int = 200_000) -> list[dict]:
+    """Eligible Thingi10K files for training with the held-out things removed (split by structure family)."""
+    pool = select_subset(meta, n=10**9, seed=0, max_faces=max_faces)
+    return [m for m in pool if m["thing_id"] not in exclude_things]

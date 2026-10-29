@@ -13,8 +13,8 @@ import numpy as np
 
 from .catalog import Catalog
 from .geometry import iou, occupancy_grid
-from .schema import BRICK_HEIGHT_PLATES, Build, Constraints, GeneratorInfo, Placement
 from .plan import plan_assembly
+from .schema import BRICK_HEIGHT_PLATES, Build, Constraints, GeneratorInfo, Placement
 from .validate import components, validate_build
 
 GENERATOR_NAME = "greedy_v1"
@@ -133,17 +133,32 @@ def _largest_ground_component(placements: list[Placement], catalog: Catalog) -> 
 
 
 def generate(target: np.ndarray, catalog: Catalog, constraints: Constraints, seed: int = 0,
-             cancellation: Callable[[], bool] | None = None, build_id: str = "build") -> CandidateResult:
+             cancellation: Callable[[], bool] | None = None, build_id: str = "build",
+             time_budget_s: float | None = None) -> CandidateResult:
     """Run every strategy, validate each, and return the best valid candidate by IoU.
-    Seed is recorded for provenance; greedy_v1 is fully deterministic and does not consume it."""
+    Seed is recorded for provenance; greedy_v1 is fully deterministic and does not consume it.
+    A wall-clock budget or external cancellation stops the search; the best candidate found so far is returned
+    and the abort is recorded in diagnostics. Never relaxes the cap or validation."""
     t0 = time.perf_counter()
     nx, ny, layers = target.shape
     target_cells = int(target.sum())
     tried = []
     best: CandidateResult | None = None
+    aborted = None
+
+    def cancel() -> bool:
+        if cancellation and cancellation():
+            return True
+        return time_budget_s is not None and (time.perf_counter() - t0) > time_budget_s
+
     for strat in STRATEGIES:
         ts = time.perf_counter()
-        placements, diag = _generate_with_strategy(target, catalog, constraints, strat, cancellation)
+        try:
+            placements, diag = _generate_with_strategy(target, catalog, constraints, strat, cancel)
+        except Cancelled:
+            aborted = "time_budget" if time_budget_s is not None and (time.perf_counter() - t0) > time_budget_s else "cancelled"
+            tried.append({"strategy": strat.name, "aborted": aborted, "seconds": round(time.perf_counter() - ts, 3)})
+            break
         kept, n_comps = _largest_ground_component(placements, catalog)
         dropped = len(placements) - len(kept)
         # Renumber so ids stay dense and steps are the retained generation order.
@@ -175,9 +190,17 @@ def generate(target: np.ndarray, catalog: Catalog, constraints: Constraints, see
         if report["ok"] and kept and (best is None or fid > best.fidelity):
             best = CandidateResult("validated_candidate", build, fid, coverage, extraneous, instruction_status=plan.status, plan=plan.diagnostics)
     diagnostics = {"strategies": tried, "target_cells": target_cells, "grid": [nx, ny, layers], "seconds": round(time.perf_counter() - t0, 3)}
+    if aborted:
+        diagnostics["aborted"] = aborted
+        diagnostics["strategies_not_run"] = [st.name for st in STRATEGIES if st.name not in {t["strategy"] for t in tried}]
     if best is None:
+        warnings = []
         if target_cells == 0:
-            diagnostics["warnings"] = ["target occupies zero grid cells at this scale; increase the target size or use a thicker mesh"]
+            warnings.append("target occupies zero grid cells at this scale; increase the target size or use a thicker mesh")
+        if aborted:
+            warnings.append(f"search {aborted} before any valid candidate was found")
+        if warnings:
+            diagnostics["warnings"] = warnings
         return CandidateResult("no_valid_candidate", None, 0.0, 0.0, 0.0, diagnostics)
     best.diagnostics = diagnostics
     if best.coverage < 0.8 or any(s["dropped_disconnected"] for s in tried if s["strategy"] == best.build.generator.strategy):

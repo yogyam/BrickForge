@@ -8,10 +8,8 @@ import statistics
 import subprocess
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
-
-import numpy as np
 
 from brickcore.catalog import load_catalog
 from brickcore.generators import get as get_generator
@@ -198,13 +196,52 @@ def to_markdown(summary: dict, records: list[dict]) -> str:
                 if r is None:
                     cells.append("")
                 elif r["status"] == "failed":
-                    cells.append("fail"); note = r.get("error_code", "")
+                    cells.append("fail")
+                    note = r.get("error_code", "")
                 else:
                     cells.append(f"{r['iou']:.3f}" + ("" if r.get("valid") else "!"))
                     if r["status"] != "validated_candidate":
                         note = r["status"]
         lines.append(f"| {c} | {idx.get((c, gens[0], budgets[0]), {}).get('group', '')} | " + " | ".join(cells) + f" | {note} |")
     return "\n".join(lines) + "\n"
+
+
+def audit(records: list[dict], budget: int | None = None, progress: bool = True) -> dict:
+    """Independently re-verify recorded results: regenerate, validate with the authoritative validator,
+    recompute IoU from occupancy, and compare with what the JSONL claims. Detects drift and dishonest records."""
+    from brickcore.geometry import iou as _iou
+    from brickcore.geometry import occupancy_grid
+    catalog = load_catalog()
+    todo = [r for r in records if r["status"] != "failed" and (budget is None or r["budget"] == budget)]
+    by_case: dict[str, list[dict]] = {}
+    for r in todo:
+        by_case.setdefault(r["case"], []).append(r)
+    mismatches, checked = [], 0
+    for i, (case, rs) in enumerate(sorted(by_case.items())):
+        r0 = rs[0]
+        bounds = Bounds(x_studs=r0["grid"][0], y_studs=r0["grid"][1], z_plates=r0["grid"][2] * 3)
+        mesh, _ = load_mesh(ROOT / r0["mesh"])
+        m, _ = normalize(mesh, bounds, catalog)
+        target = voxelize(m, bounds, catalog)
+        for r in rs:
+            res = get_generator(r["generator"])(target, catalog, Constraints(max_pieces=r["budget"], bounds=bounds, color_id="4"), seed=r["seed"])
+            got = {"status": res.status, "pieces": len(res.build.placements) if res.build else 0}
+            if res.build is not None:
+                rep = validate_build(res.build, catalog)
+                occ = occupancy_grid(res.build.placements, catalog, *target.shape)
+                got.update({"valid": rep["ok"], "iou": round(_iou(occ, target), 4), "pieces_le_budget": len(res.build.placements) <= r["budget"],
+                            "one_component": rep["component_count"] == 1, "replay_ok": rep["replay_ok"]})
+                problems = [k for k in ("status", "pieces", "valid", "iou") if got.get(k) != r.get(k)]
+                if not (got["pieces_le_budget"] and got["one_component"] and got["replay_ok"] and got["valid"]):
+                    problems.append("hard_constraint")
+            else:
+                problems = [k for k in ("status", "pieces") if got.get(k) != r.get(k)]
+            checked += 1
+            if problems:
+                mismatches.append({"case": r["case"], "budget": r["budget"], "problems": problems, "recorded": {k: r.get(k) for k in ("status", "pieces", "valid", "iou")}, "recomputed": got})
+        if progress:
+            print(f"[audit {i + 1}/{len(by_case)}] {case}", file=sys.stderr)
+    return {"checked": checked, "mismatches": mismatches, "ok": not mismatches}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -223,6 +260,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out", required=True, help="output prefix, e.g. docs/benchmarks/baseline_v1")
     s = sub.add_parser("summarize")
     s.add_argument("jsonl")
+    a = sub.add_parser("audit", help="regenerate and independently re-verify every recorded result")
+    a.add_argument("jsonl")
+    a.add_argument("--budget", type=int, default=None)
     args = ap.parse_args(argv)
 
     if args.cmd == "fetch-thingi":
@@ -246,8 +286,13 @@ def main(argv: list[str] | None = None) -> int:
         out.with_suffix(".md").write_text(to_markdown(summary, records))
         print(to_markdown(summary, records))
         return 0
+    if args.cmd == "audit":
+        records = [json.loads(line) for line in Path(args.jsonl).read_text().splitlines() if line.strip()]
+        rep = audit(records, budget=args.budget)
+        print(json.dumps(rep, indent=2))
+        return 0 if rep["ok"] else 1
     if args.cmd == "summarize":
-        records = [json.loads(l) for l in Path(args.jsonl).read_text().splitlines() if l.strip()]
+        records = [json.loads(line) for line in Path(args.jsonl).read_text().splitlines() if line.strip()]
         print(to_markdown(summarize(records), records))
         return 0
     return 1
