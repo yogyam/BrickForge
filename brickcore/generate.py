@@ -11,6 +11,7 @@ from typing import Callable
 
 import numpy as np
 
+from .candidates import window_sums as _window_sums
 from .catalog import Catalog
 from .geometry import iou, occupancy_grid
 from .plan import plan_assembly
@@ -51,11 +52,6 @@ class CandidateResult:
     plan: dict = field(default_factory=dict)
 
 
-def _window_sums(a: np.ndarray, w: int, d: int) -> np.ndarray:
-    """Sum of a[x:x+w, y:y+d] for every anchor, via a padded 2D integral image."""
-    s = np.zeros((a.shape[0] + 1, a.shape[1] + 1), dtype=np.int32)
-    s[1:, 1:] = a.astype(np.int32).cumsum(0).cumsum(1)
-    return s[w:, d:] - s[:-w, d:] - s[w:, :-d] + s[:-w, :-d]
 
 
 def _generate_with_strategy(target: np.ndarray, catalog: Catalog, constraints: Constraints, strategy: Strategy,
@@ -132,6 +128,27 @@ def _largest_ground_component(placements: list[Placement], catalog: Catalog) -> 
     return [p for p in placements if p.id in keep], len(comps)
 
 
+def finalize_candidate(raw_placements: list[Placement], target: np.ndarray, catalog: Catalog, constraints: Constraints,
+                       generator: GeneratorInfo, build_id: str) -> tuple[Build, dict, dict]:
+    """Shared post-processing for every generator: keep the largest ground-connected component, renumber ids,
+    plan assembly, validate, and compute fidelity metrics. Returns (build, validation_report, metrics)."""
+    nx, ny, layers = target.shape
+    kept, n_comps = _largest_ground_component(raw_placements, catalog)
+    dropped = len(raw_placements) - len(kept)
+    kept = [Placement(id=f"b{i + 1:04d}", part_key=p.part_key, x=p.x, y=p.y, z=p.z, rotation_deg=p.rotation_deg, color_id=p.color_id) for i, p in enumerate(kept)]
+    plan = plan_assembly(kept, catalog)
+    build = Build(build_id=build_id, catalog_version=catalog.version, generator=generator, constraints=constraints, placements=kept, steps=plan.steps)
+    report = validate_build(build, catalog)
+    occ = occupancy_grid(kept, catalog, nx, ny, layers)
+    inter = int(np.logical_and(occ, target).sum())
+    gen_cells, target_cells = int(occ.sum()), int(target.sum())
+    metrics = {"pieces": len(kept), "dropped_disconnected": dropped, "components_before_trim": n_comps, "valid": report["ok"],
+               "iou": iou(occ, target), "coverage": inter / target_cells if target_cells else 0.0,
+               "extraneous": (gen_cells - inter) / gen_cells if gen_cells else 0.0, "instruction_status": plan.status,
+               "plan_diagnostics": plan.diagnostics if plan.status != "planned" else {}}
+    return build, report, metrics
+
+
 def generate(target: np.ndarray, catalog: Catalog, constraints: Constraints, seed: int = 0,
              cancellation: Callable[[], bool] | None = None, build_id: str = "build",
              time_budget_s: float | None = None) -> CandidateResult:
@@ -159,36 +176,17 @@ def generate(target: np.ndarray, catalog: Catalog, constraints: Constraints, see
             aborted = "time_budget" if time_budget_s is not None and (time.perf_counter() - t0) > time_budget_s else "cancelled"
             tried.append({"strategy": strat.name, "aborted": aborted, "seconds": round(time.perf_counter() - ts, 3)})
             break
-        kept, n_comps = _largest_ground_component(placements, catalog)
-        dropped = len(placements) - len(kept)
-        # Renumber so ids stay dense and steps are the retained generation order.
-        kept = [Placement(id=f"b{i + 1:04d}", part_key=p.part_key, x=p.x, y=p.y, z=p.z, rotation_deg=p.rotation_deg, color_id=p.color_id) for i, p in enumerate(kept)]
-        plan = plan_assembly(kept, catalog)
-        build = Build(
-            build_id=f"{build_id}_{strat.name}",
-            catalog_version=catalog.version,
-            generator=GeneratorInfo(name=GENERATOR_NAME, version=GENERATOR_VERSION, seed=seed, strategy=strat.name),
-            constraints=constraints,
-            placements=kept,
-            steps=plan.steps,  # empty when planning did not succeed: no invented instructions
-        )
-        report = validate_build(build, catalog)
-        occ = occupancy_grid(kept, catalog, nx, ny, layers)
-        inter = int(np.logical_and(occ, target).sum())
-        gen_cells = int(occ.sum())
-        coverage = inter / target_cells if target_cells else 0.0
-        extraneous = (gen_cells - inter) / gen_cells if gen_cells else 0.0
-        fid = iou(occ, target)
-        entry = {"strategy": strat.name, "pieces": len(kept), "dropped_disconnected": dropped, "components_before_trim": n_comps,
-                 "valid": report["ok"], "iou": round(fid, 4), "coverage": round(coverage, 4), "extraneous": round(extraneous, 4),
-                 "instruction_status": plan.status, "seconds": round(time.perf_counter() - ts, 3), **diag}
-        if plan.status != "planned":
-            entry["plan_diagnostics"] = plan.diagnostics
+        info = GeneratorInfo(name=GENERATOR_NAME, version=GENERATOR_VERSION, seed=seed, strategy=strat.name)
+        build, report, m = finalize_candidate(placements, target, catalog, constraints, info, f"{build_id}_{strat.name}")
+        entry = {"strategy": strat.name, **{k: (round(v, 4) if isinstance(v, float) else v) for k, v in m.items() if k != "plan_diagnostics"},
+                 "seconds": round(time.perf_counter() - ts, 3), **diag}
+        if m["plan_diagnostics"]:
+            entry["plan_diagnostics"] = m["plan_diagnostics"]
         if not report["ok"]:
             entry["errors"] = [e["code"] for e in report["errors"]]
         tried.append(entry)
-        if report["ok"] and kept and (best is None or fid > best.fidelity):
-            best = CandidateResult("validated_candidate", build, fid, coverage, extraneous, instruction_status=plan.status, plan=plan.diagnostics)
+        if report["ok"] and build.placements and (best is None or m["iou"] > best.fidelity):
+            best = CandidateResult("validated_candidate", build, m["iou"], m["coverage"], m["extraneous"], instruction_status=m["instruction_status"], plan=m["plan_diagnostics"])
     diagnostics = {"strategies": tried, "target_cells": target_cells, "grid": [nx, ny, layers], "seconds": round(time.perf_counter() - t0, 3)}
     if aborted:
         diagnostics["aborted"] = aborted
