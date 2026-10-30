@@ -2,6 +2,7 @@
 Free-running greedy decode (or seeded sampling) over legal candidates, then the shared finalize step."""
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 

@@ -78,3 +78,28 @@ def test_policy_forward_backward_and_tiny_overfit(catalog):
         opt.step()
     assert loss.item() < first * 0.5
     assert acc > 0.4
+
+
+def test_sft_generator_registers_and_runs_from_a_checkpoint(catalog, tmp_path, monkeypatch):
+    torch = pytest.importorskip("torch")
+    from brickcore.generators import REGISTRY, get
+    from brickcore.schema import Bounds, Constraints
+    from ml.policy import BrickPolicy
+    arch = {"channels": 8, "hidden": 16, "layers": 2}
+    ck = tmp_path / "tiny.pt"
+    torch.save({"arch": arch, "state_dict": BrickPolicy(**arch).state_dict(), "version": "test"}, ck)
+    import ml.sft_generator as sg
+    sg._cached.clear()
+    REGISTRY.pop("sft_v1", None)
+    monkeypatch.setattr(sg, "DEFAULT_CKPT", ck)
+    import importlib
+    importlib.reload(sg)
+    monkeypatch.setattr(sg, "DEFAULT_CKPT", ck)
+    gen = get("sft_v1")
+    t = synth_target("box", np.random.default_rng(11))
+    bounds = Bounds(x_studs=16, y_studs=16, z_plates=24)
+    res = gen(t, catalog, Constraints(max_pieces=30, bounds=bounds, color_id="4"), seed=0, ckpt=ck)
+    assert res.status in ("validated_candidate", "partial_candidate", "no_valid_candidate")
+    assert res.diagnostics["checkpoint"] == "tiny.pt"
+    if res.build is not None:
+        assert len(res.build.placements) <= 30 and validate_build(res.build, catalog)["ok"]
