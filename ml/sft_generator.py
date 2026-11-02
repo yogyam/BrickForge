@@ -28,7 +28,8 @@ DEFAULT_DEVICE = os.environ.get("BRICKFORGE_SFT_DEVICE", "cpu")
 def load_policy(path: Path, device: torch.device) -> tuple[BrickPolicy, dict]:
     ck = torch.load(path, map_location=device, weights_only=False)
     model = BrickPolicy(**ck["arch"])
-    model.load_state_dict(ck["state_dict"])
+    missing, unexpected = model.load_state_dict(ck["state_dict"], strict=False)
+    assert not unexpected and all(k.startswith("value_mlp") for k in missing), (missing, unexpected)  # SFT ckpts predate the value head
     model.to(device).eval()
     return model, ck
 
@@ -86,7 +87,9 @@ class SFTGenerator:
                  build_id: str = "build", time_budget_s: float | None = None, temperature: float = 0.0) -> CandidateResult:
         t0 = time.perf_counter()
         rng = np.random.default_rng(seed)
-        cancel = (lambda: (cancellation and cancellation()) or (time_budget_s is not None and time.perf_counter() - t0 > time_budget_s))
+        def cancel() -> bool:
+            return bool(cancellation and cancellation()) or (time_budget_s is not None and time.perf_counter() - t0 > time_budget_s)
+
         raw, diag = rollout(self.model, target, catalog, constraints.max_pieces, self.device, temperature, rng, constraints.color_id, cancel,
                             stop_mode=self.stop_mode)
         strategy = ("greedy_decode" if temperature == 0 else f"sample_t{temperature}") + ("" if self.stop_mode == "learned" else f"_stop_{self.stop_mode}")
@@ -118,5 +121,30 @@ def sft_generate_nostop(target, catalog, constraints, seed=0, cancellation=None,
     return sft_generate(target, catalog, constraints, seed, cancellation, build_id, time_budget_s, ckpt, stop_mode="never", name="sft_v1_nostop")
 
 
+BEST_OF_N = 8
+
+
+def sft_generate_bestof(target, catalog, constraints, seed=0, cancellation=None, build_id="build", time_budget_s=None, ckpt: Path = DEFAULT_CKPT,
+                        n: int = BEST_OF_N, temperature: float = 1.0):
+    """Test-time-compute baseline: the greedy decode plus n-1 sampled rollouts, keep the best validated after-trim IoU."""
+    t0 = time.perf_counter()
+    key = (str(ckpt), "learned", f"sft_v1_bo{n}")
+    if key not in _cached:
+        _cached[key] = SFTGenerator(ckpt, stop_mode="learned", name=f"sft_v1_bo{n}")
+    gen = _cached[key]
+    best = None
+    for i in range(n):
+        remaining = None if time_budget_s is None else max(time_budget_s - (time.perf_counter() - t0), 0.01)
+        res = gen(target, catalog, constraints, seed * 1000 + i, cancellation, build_id, remaining, temperature=0.0 if i == 0 else temperature)
+        res.diagnostics["sample_index"] = i
+        if best is None or (res.build is not None and (best.build is None or res.fidelity > best.fidelity)):
+            best = res
+        if cancellation and cancellation():
+            break
+    best.diagnostics["samples"] = n
+    return best
+
+
 register(GENERATOR_NAME, sft_generate)
 register("sft_v1_nostop", sft_generate_nostop)
+register(f"sft_v1_bo{BEST_OF_N}", sft_generate_bestof)

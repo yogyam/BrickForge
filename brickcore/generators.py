@@ -15,9 +15,11 @@ def register(name: str, fn: Callable) -> None:
 
 
 def get(name: str) -> Callable:
-    if name not in REGISTRY and name.startswith("sft"):
+    if name not in REGISTRY:
         import importlib
-        importlib.import_module("ml.sft_generator")  # registers sft_v1 on import
+        for prefix, module in (("sft", "ml.sft_generator"), ("rl", "ml.rl_generator")):
+            if name.startswith(prefix):
+                importlib.import_module(module)  # registers its generators on import
     if name not in REGISTRY:
         raise KeyError(f"unknown generator {name!r}; known: {sorted(REGISTRY)}")
     return REGISTRY[name]

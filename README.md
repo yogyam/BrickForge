@@ -4,7 +4,7 @@ Converts a 3D mesh into a LEGO-compatible brick build, a parts list, and checked
 Research goal: compare a deterministic baseline, a supervised model, and RL under identical geometry and
 evaluation rules, across piece budgets and a structural stability model. See `BrickForge_PRD_Design_Doc.md`.
 
-**Status: M0 through M5 complete (baseline frozen; supervised generator trained and benchmarked).** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
+**Status: M0 through M5 complete; M6 (RL) gate passed, full run in progress.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
 mesh normalization, voxelizer, greedy baseline, authoritative validator, assembly planner with insertion-path
 checks and replay validation, static force-model stability analysis, BOM/LDraw export, and a static viewer.
 Learned generators run through the same validator and planner as the baseline. No server. Nothing here is physically tested: every label reads
@@ -66,6 +66,17 @@ Result (`docs/benchmarks/sft_v1.md`, 53 held-out cases, 200-piece cap): mean IoU
 sft_v1_nostop 0.652. The supervised policy matches the baseline on procedural shapes (0.81 vs 0.83) and trails on real
 meshes (0.59 vs 0.67). Before the single-component trim its occupancy IoU exceeds the teacher's; the gap is interlocking
 and dead-end avoidance, not coverage. Full analysis and the implications for RL are in `docs/sft.md`.
+
+## RL generator (M6)
+
+```sh
+make rl-gate                       # 16-example PPO gate (~5 minutes): after-trim IoU must rise above the SFT init
+make rl-train                      # 250 PPO iterations from sft_v1 (~2 hours on the M5 Pro) -> checkpoints/rl_v1.pt
+make rl-bench                      # frozen benchmark with greedy, sft, sft best-of-8 and rl, then audit
+```
+
+The reward is the IoU of the build *after* the component trim plus a stability bonus, so the policy is trained on what
+the user actually receives. Design, gate result and benchmark numbers: `docs/rl.md`.
 
 ## MCP server
 

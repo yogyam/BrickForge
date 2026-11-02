@@ -31,6 +31,8 @@ seconds, hardware, git commit, catalog version.
 (`BRICKFORGE_SFT_DEVICE`), which is as fast as Metal for one target and reproducible across processes. Their records
 carry additive diagnostic fields absent from `baseline_v1`: `raw_pieces`, `dropped_disconnected`,
 `components_before_trim`, `stop_reason`. Results: `docs/benchmarks/sft_v1.*`, analysed in `docs/sft.md`.
+`sft_v1_bo8` is best-of-8 sampling from the same SFT checkpoint (seeded; ~8x decode cost). `rl_v1` loads
+`checkpoints/rl_v1.pt` (`BRICKFORGE_RL_CKPT`, `BRICKFORGE_RL_DEVICE`); see `docs/rl.md`.
 
 ## Audit
 `./bench audit docs/benchmarks/baseline_v1.jsonl` regenerates every non-failed record, validates it with the
