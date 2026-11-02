@@ -30,7 +30,7 @@ seconds, hardware, git commit, catalog version.
 `checkpoints/sft_v1.pt` (override with `BRICKFORGE_SFT_CKPT`) and decode on CPU by default
 (`BRICKFORGE_SFT_DEVICE`), which is as fast as Metal for one target and reproducible across processes. Their records
 carry additive diagnostic fields absent from `baseline_v1`: `raw_pieces`, `dropped_disconnected`,
-`components_before_trim`, `stop_reason`. Results: `docs/benchmarks/sft_v1.*`, analysed in `docs/sft.md`.
+`components_before_trim`, `stop_reason`. Results: `docs/benchmarks/sft_v1.*` (M5) and `docs/benchmarks/rl_v1.*` (M6, all five generators), analysed in `docs/sft.md` and `docs/rl.md`.
 `sft_v1_bo8` is best-of-8 sampling from the same SFT checkpoint (seeded; ~8x decode cost). `rl_v1` loads
 `checkpoints/rl_v1.pt` (`BRICKFORGE_RL_CKPT`, `BRICKFORGE_RL_DEVICE`); see `docs/rl.md`.
 
@@ -39,6 +39,13 @@ carry additive diagnostic fields absent from `baseline_v1`: `raw_pieces`, `dropp
 authoritative validator, recomputes IoU from occupancy, and compares status, piece count, validity and IoU
 with what the JSONL claims. Any mismatch fails the audit. Run it after any change to brickcore to prove the
 frozen baseline is still reproducible, and before quoting numbers in the paper.
+
+Voxelization is pinned (M6, 2026-11-01): trimesh's point-containment test re-checks ambiguous cell centres with a ray
+direction drawn from numpy's global RNG, so one benchmark mesh (`thingi_225935`, a surface through a cell centre)
+voxelized to 288, 289 or 290 cells depending on the process. `brickcore.mesh.voxelize` now runs that test under a
+fixed, restored RNG state (`VOXELIZE_RNG_SEED = 1`, the value that reproduces the 290-cell target every frozen
+record was scored against). No recorded number changed; the audit of `rl_v1` first surfaced this as 15 IoU
+mismatches of at most 0.013 on that single case, all with identical builds.
 
 ## Rules
 - Report every case, including failures. Never evaluate only curated successes.

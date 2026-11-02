@@ -4,7 +4,7 @@ Converts a 3D mesh into a LEGO-compatible brick build, a parts list, and checked
 Research goal: compare a deterministic baseline, a supervised model, and RL under identical geometry and
 evaluation rules, across piece budgets and a structural stability model. See `BrickForge_PRD_Design_Doc.md`.
 
-**Status: M0 through M5 complete; M6 (RL) gate passed, full run in progress.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
+**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked); ablations and photo input next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
 mesh normalization, voxelizer, greedy baseline, authoritative validator, assembly planner with insertion-path
 checks and replay validation, static force-model stability analysis, BOM/LDraw export, and a static viewer.
 Learned generators run through the same validator and planner as the baseline. No server. Nothing here is physically tested: every label reads
@@ -76,7 +76,14 @@ make rl-bench                      # frozen benchmark with greedy, sft, sft best
 ```
 
 The reward is the IoU of the build *after* the component trim plus a stability bonus, so the policy is trained on what
-the user actually receives. Design, gate result and benchmark numbers: `docs/rl.md`.
+the user actually receives.
+
+Result (`docs/benchmarks/rl_v1.md`, 53 held-out cases, 200-piece cap): mean IoU greedy 0.719, sft_v1 0.651,
+sft_v1_bo8 (best of 8 samples, 8x decode time) 0.699, **rl_v1 0.694**. RL beats imitation on 22 cases and loses on 5,
+halves the pieces dropped by the component trim, and matches best-of-8 at one eighth of its cost. It ties the frozen
+baseline on procedural shapes (0.762 vs 0.764) and still trails it on real meshes (0.603 vs 0.668), where the learned
+policies stop early on shapes outside the synthetic training families. Every procedural build is stable under the
+simplified static force model (not physically tested). Design, training curve and failure analysis: `docs/rl.md`.
 
 ## MCP server
 

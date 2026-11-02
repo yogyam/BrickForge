@@ -58,3 +58,18 @@ def test_voxelize_respects_unequal_units(fixture_meshes, catalog):
     m, _ = normalize(mesh, B, catalog)
     occ = voxelize(m, B, catalog)
     assert occ.sum(axis=(0, 1)).tolist()[:4] == [160, 160, 160, 0]
+
+
+def test_voxelize_is_independent_of_global_rng_and_restores_it(fixture_meshes, catalog):
+    # trimesh re-tests ambiguous cell centres with a random ray direction from numpy's global RNG; voxelize must
+    # neither depend on that state nor consume it (callers such as the trainers seed numpy themselves)
+    mesh, _ = load_mesh(fixture_meshes / "slab.stl")
+    m, _ = normalize(mesh, B, catalog)
+    np.random.seed(7)
+    expected_next = np.random.random()
+    np.random.seed(7)
+    a = voxelize(m, B, catalog)
+    assert np.random.random() == expected_next
+    np.random.seed(99)
+    b = voxelize(m, B, catalog)
+    assert np.array_equal(a, b)

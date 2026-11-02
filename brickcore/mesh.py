@@ -117,6 +117,9 @@ def normalize(mesh: trimesh.Trimesh, bounds: Bounds, catalog: Catalog, up: str =
     return m, norm
 
 
+VOXELIZE_RNG_SEED = 1
+
+
 def voxelize(mesh: trimesh.Trimesh, bounds: Bounds, catalog: Catalog) -> np.ndarray:
     """Occupancy [x_studs, y_studs, layers] sampled at cell centres of 1 stud x 1 stud x 1 brick cells."""
     nx, ny, nz = bounds.x_studs, bounds.y_studs, bounds.layers
@@ -125,7 +128,16 @@ def voxelize(mesh: trimesh.Trimesh, bounds: Bounds, catalog: Catalog) -> np.ndar
     ys = (np.arange(ny) + 0.5) * sp
     zs = (np.arange(nz) + 0.5) * bh
     pts = np.stack(np.meshgrid(xs, ys, zs, indexing="ij"), axis=-1).reshape(-1, 3)
-    inside = mesh.contains(pts)
+    # trimesh's parity test re-checks cell centres whose forward and backward rays disagree using a direction drawn
+    # from numpy's *global* RNG, so meshes with a surface through a cell centre (Thingi10K 225935 flips 288-290
+    # cells) would voxelize differently from process to process. Pin that draw and restore the caller's RNG state.
+    # The seed is the one that reproduces the frozen benchmark targets recorded in docs/benchmarks/baseline_v1.
+    state = np.random.get_state()
+    try:
+        np.random.seed(VOXELIZE_RNG_SEED)
+        inside = mesh.contains(pts)
+    finally:
+        np.random.set_state(state)
     return inside.reshape(nx, ny, nz)
 
 
