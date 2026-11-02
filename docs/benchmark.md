@@ -25,6 +25,13 @@ seconds, hardware, git commit, catalog version.
 ./bench summarize docs/benchmarks/baseline_v1.jsonl
 ```
 
+## Learned generators
+`sft_v1` (learned STOP) and `sft_v1_nostop` (STOP masked; stops on empty candidate set or cap) load
+`checkpoints/sft_v1.pt` (override with `BRICKFORGE_SFT_CKPT`) and decode on CPU by default
+(`BRICKFORGE_SFT_DEVICE`), which is as fast as Metal for one target and reproducible across processes. Their records
+carry additive diagnostic fields absent from `baseline_v1`: `raw_pieces`, `dropped_disconnected`,
+`components_before_trim`, `stop_reason`. Results: `docs/benchmarks/sft_v1.*`, analysed in `docs/sft.md`.
+
 ## Audit
 `./bench audit docs/benchmarks/baseline_v1.jsonl` regenerates every non-failed record, validates it with the
 authoritative validator, recomputes IoU from occupancy, and compares status, piece count, validity and IoU

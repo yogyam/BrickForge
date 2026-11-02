@@ -103,3 +103,14 @@ def test_sft_generator_registers_and_runs_from_a_checkpoint(catalog, tmp_path, m
     assert res.diagnostics["checkpoint"] == "tiny.pt"
     if res.build is not None:
         assert len(res.build.placements) <= 30 and validate_build(res.build, catalog)["ok"]
+    # no-STOP decode: STOP is masked, so the rollout ends only on an empty candidate set or the cap
+    from ml.sft_generator import load_policy, rollout
+    model, _ = load_policy(ck, torch.device("cpu"))
+    raw, diag = rollout(model, t, catalog, 30, torch.device("cpu"), stop_mode="never")
+    assert diag["stop_reason"] in ("no_legal_candidate", "cap")
+    gen2 = get("sft_v1_nostop")
+    res2 = gen2(t, catalog, Constraints(max_pieces=30, bounds=bounds, color_id="4"), seed=0, ckpt=ck)
+    assert res2.diagnostics["checkpoint"] == "tiny.pt"
+    assert res2.diagnostics["stop_reason"] in ("no_legal_candidate", "cap")
+    if res2.build is not None:
+        assert res2.build.generator.name == "sft_v1_nostop" and validate_build(res2.build, catalog)["ok"]

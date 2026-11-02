@@ -127,6 +127,10 @@ def run(cases: list[Case], generators: list[str], budgets: list[int], seeds: lis
                             rec.update({"status": res.status, "iou": round(res.fidelity, 4), "coverage": round(res.coverage, 4),
                                         "extraneous": round(res.extraneous, 4), "generate_s": round(time.perf_counter() - t1, 3),
                                         "pieces": len(res.build.placements) if res.build else 0, "instruction_status": res.instruction_status})
+                            # generator-side diagnostics that explain fidelity loss (additive fields; absent in baseline_v1 records)
+                            for key in ("raw_pieces", "dropped_disconnected", "components_before_trim", "stop_reason", "aborted"):
+                                if key in res.diagnostics:
+                                    rec[key] = res.diagnostics[key]
                             if res.build is not None:
                                 report = validate_build(res.build, catalog)
                                 rec["valid"] = report["ok"]

@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import queue
 import random
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -77,7 +79,9 @@ def free_run_eval(model, examples: list[Example], catalog, device, max_n: int | 
     from .sft_generator import rollout
     model.eval()
     rows = []
-    for ex in examples[:max_n]:
+    if max_n is not None and max_n < len(examples):
+        examples = random.Random(1234).sample(examples, max_n)  # fixed subset across evals; not the first N (easiest families)
+    for ex in examples:
         target = target_from_example(ex)
         bounds = Bounds(x_studs=target.shape[0], y_studs=target.shape[1], z_plates=target.shape[2] * 3)
         cons = Constraints(max_pieces=ex.budget, bounds=bounds, color_id="4")
@@ -90,6 +94,47 @@ def free_run_eval(model, examples: list[Example], catalog, device, max_n: int | 
     return {"n": len(rows), "mean_iou": round(sum(r["iou"] for r in rows) / n, 4), "mean_teacher_iou": round(sum(r["teacher_iou"] for r in rows) / n, 4),
             "valid_rate": round(sum(r["valid"] for r in rows) / n, 3), "planned_rate": round(sum(r["planned"] for r in rows) / n, 3),
             "reconstructed": sum(r["valid"] and r["iou"] >= r["teacher_iou"] - 1e-6 for r in rows), "rows": rows}
+
+
+class ItemPool:
+    """Streams teacher items for large datasets: a background thread builds items for a random sample of
+    (example, symmetry) pairs while the trainer consumes the previous pool. Keeps memory bounded
+    (a full augmented precompute of 2k examples would need ~40 GB)."""
+
+    def __init__(self, train: list[Example], catalog, syms: list[int], pool_examples: int, seed: int, depth: int = 2):
+        self.train, self.catalog, self.syms, self.pool_examples = train, catalog, list(syms), pool_examples
+        self.rng = random.Random(seed + 1)
+        self.q: queue.Queue = queue.Queue(maxsize=depth)
+        self.missing = 0
+        self.built = 0
+        self._stop = threading.Event()
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self.thread.start()
+
+    def _build(self) -> list[dict]:
+        items = []
+        for ex in self.rng.sample(self.train, min(self.pool_examples, len(self.train))):
+            its, miss = make_items(ex, self.catalog, sym=self.rng.choice(self.syms))
+            items += its
+            self.missing += miss
+            self.built += 1
+        return items
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            pool = self._build()
+            while not self._stop.is_set():
+                try:
+                    self.q.put(pool, timeout=0.5)
+                    break
+                except queue.Full:
+                    continue
+
+    def next(self) -> list[dict]:
+        return self.q.get()
+
+    def close(self) -> None:
+        self._stop.set()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -109,6 +154,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--eval-every", type=int, default=250)
     ap.add_argument("--eval-n", type=int, default=32)
     ap.add_argument("--profile", action="store_true", help="time 50 steps on the chosen device and exit")
+    ap.add_argument("--pool-examples", type=int, default=96, help="streaming mode: examples per item pool")
+    ap.add_argument("--pool-refresh", type=int, default=150, help="streaming mode: steps per pool before swapping")
+    ap.add_argument("--precompute-max", type=int, default=512, help="precompute all items when train_examples*syms <= this; else stream")
     args = ap.parse_args(argv)
 
     torch.manual_seed(args.seed)
@@ -130,13 +178,21 @@ def main(argv: list[str] | None = None) -> int:
     # Pre-build teacher items (cheap for small sets; for large sets sample a subset of steps per example per epoch).
     t0 = time.perf_counter()
     items, missing = [], 0
-    syms = range(8) if args.augment else [0]
-    for ex in train:
-        for sym in syms:
-            its, miss = make_items(ex, catalog, sym=sym)
-            items += its
-            missing += miss
-    print(f"device={device} train_examples={len(train)} decision_items={len(items)} teacher_not_in_candidates={missing} prep_s={time.perf_counter() - t0:.1f}", file=sys.stderr)
+    syms = list(range(8)) if args.augment else [0]
+    streaming = len(train) * len(syms) > args.precompute_max and not args.profile
+    pool = None
+    if streaming:
+        pool = ItemPool(train, catalog, syms, args.pool_examples, args.seed)
+        items = pool.next()
+        print(f"device={device} train_examples={len(train)} syms={len(syms)} mode=streaming pool_examples={args.pool_examples} "
+              f"pool_refresh={args.pool_refresh} first_pool_items={len(items)} prep_s={time.perf_counter() - t0:.1f}", file=sys.stderr)
+    else:
+        for ex in train:
+            for sym in syms:
+                its, miss = make_items(ex, catalog, sym=sym)
+                items += its
+                missing += miss
+        print(f"device={device} train_examples={len(train)} decision_items={len(items)} teacher_not_in_candidates={missing} prep_s={time.perf_counter() - t0:.1f}", file=sys.stderr)
 
     arch = {"channels": args.channels, "hidden": args.hidden, "layers": args.layers}
     model = BrickPolicy(**arch).to(device)
@@ -149,12 +205,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.profile:
         batch = collate(rng.sample(items, min(args.batch, len(items))), device)
         for _ in range(5):
-            loss, _ = loss_and_acc(model, batch); opt.zero_grad(); loss.backward(); opt.step()
+            loss, _ = loss_and_acc(model, batch)
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
         if device.type == "mps":
             torch.mps.synchronize()
         t1 = time.perf_counter()
         for _ in range(50):
-            loss, _ = loss_and_acc(model, batch); opt.zero_grad(); loss.backward(); opt.step()
+            loss, _ = loss_and_acc(model, batch)
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
         if device.type == "mps":
             torch.mps.synchronize()
         dt = (time.perf_counter() - t1) / 50
@@ -163,6 +225,8 @@ def main(argv: list[str] | None = None) -> int:
 
     best_iou = -1.0
     for step in range(1, args.steps + 1):
+        if pool is not None and step > 1 and step % args.pool_refresh == 1:
+            items = pool.next()
         batch_items = rng.sample(items, min(args.batch, len(items)))
         batch = collate(batch_items, device)
         loss, acc = loss_and_acc(model, batch)
@@ -173,17 +237,24 @@ def main(argv: list[str] | None = None) -> int:
         sched.step()
         if step % 25 == 0 or step == 1:
             rec = {"step": step, "loss": round(loss.item(), 4), "acc": round(acc, 4), "lr": sched.get_last_lr()[0], "t": round(time.perf_counter() - t0, 1)}
-            log.write(json.dumps(rec) + "\n"); log.flush()
+            if pool is not None:
+                rec["pool_examples_built"] = pool.built
+                rec["teacher_not_in_candidates"] = pool.missing
+            log.write(json.dumps(rec) + "\n")
+            log.flush()
             print(rec, file=sys.stderr)
         if step % args.eval_every == 0 or step == args.steps:
             ev = free_run_eval(model, val, catalog, device, args.eval_n)
             rec = {"step": step, "eval": {k: v for k, v in ev.items() if k != "rows"}}
-            log.write(json.dumps(rec) + "\n"); log.flush()
+            log.write(json.dumps(rec) + "\n")
+            log.flush()
             print(rec, file=sys.stderr)
             if ev["mean_iou"] > best_iou:
                 best_iou = ev["mean_iou"]
                 torch.save({"arch": arch, "state_dict": model.state_dict(), "version": "0.1.0", "name": args.name, "step": step, "eval": rec["eval"],
                             "data": str(args.data), "n_train_examples": len(train), "seed": args.seed}, ck_dir / f"{args.name}.pt")
+    if pool is not None:
+        pool.close()
     final = free_run_eval(model, val, catalog, device, None if args.overfit else args.eval_n)
     (run_dir / "final_eval.json").write_text(json.dumps(final, indent=2) + "\n")
     summary = {k: v for k, v in final.items() if k != "rows"}

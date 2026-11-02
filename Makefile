@@ -2,7 +2,7 @@
 # sync daemon marks files under dot-directories as hidden, which makes Python skip the editable .pth.
 export UV_PROJECT_ENVIRONMENT ?= $(HOME)/.venvs/brickforge
 
-.PHONY: setup test fixtures demo bench sft-data sft-gate clean
+.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench clean
 
 setup:
 	uv sync
@@ -27,7 +27,15 @@ sft-data:
 	uv run python -m ml.data --synthetic-per-family 200 --out data/sft/synthetic.jsonl
 
 sft-gate:
-	uv run python -m ml.train_sft --data data/sft/synthetic.jsonl --overfit 32 --steps 1500 --eval-every 500 --name sft_overfit32
+	uv run --group ml python -m ml.train_sft --data data/sft/synthetic.jsonl --overfit 32 --steps 1500 --eval-every 500 --name sft_overfit32
+
+sft-train:
+	cat data/sft/synthetic.jsonl data/sft/thingi.jsonl > data/sft/examples.jsonl
+	uv run --group ml python -m ml.train_sft --data data/sft/examples.jsonl --steps 20000 --augment --eval-every 1000 --eval-n 32 --name sft_v1
+
+sft-bench:
+	uv run --group ml brickforge-bench run --suite all --generators greedy_v1 sft_v1 sft_v1_nostop --budgets 50 100 200 --out docs/benchmarks/sft_v1
+	uv run --group ml brickforge-bench audit docs/benchmarks/sft_v1.jsonl
 
 clean:
 	rm -rf runs

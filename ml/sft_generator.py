@@ -20,6 +20,9 @@ from .policy import BrickPolicy, candidate_tensors, collate, voxel_input
 GENERATOR_NAME = "sft_v1"
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CKPT = Path(os.environ.get("BRICKFORGE_SFT_CKPT", ROOT / "checkpoints" / "sft_v1.pt"))  # override per run
+# Inference runs on CPU by default: the policy is tiny (97k params), CPU decode is as fast as Metal for one target,
+# and CPU results are reproducible across processes and machines. Training still uses Metal.
+DEFAULT_DEVICE = os.environ.get("BRICKFORGE_SFT_DEVICE", "cpu")
 
 
 def load_policy(path: Path, device: torch.device) -> tuple[BrickPolicy, dict]:
@@ -33,7 +36,9 @@ def load_policy(path: Path, device: torch.device) -> tuple[BrickPolicy, dict]:
 @torch.no_grad()
 def rollout(model: BrickPolicy, target: np.ndarray, catalog: Catalog, max_pieces: int, device: torch.device,
             temperature: float = 0.0, rng: np.random.Generator | None = None, color_id: str = "4",
-            cancel=None) -> tuple[list[Placement], dict]:
+            cancel=None, stop_mode: str = "learned") -> tuple[list[Placement], dict]:
+    """stop_mode: "learned" lets the policy choose STOP; "never" masks STOP so decoding runs until the legal
+    candidate set is empty or the piece cap is reached (the baseline's own stopping rule)."""
     grid = target.shape
     filled = np.zeros_like(target)
     placements: list[Placement] = []
@@ -49,6 +54,9 @@ def rollout(model: BrickPolicy, target: np.ndarray, catalog: Catalog, max_pieces
         cell_idx, cell_mask, feats = candidate_tensors(c, grid)
         batch = collate([{"vox": voxel_input(target, filled), "cell_idx": cell_idx, "cell_mask": cell_mask, "feats": feats, "target_index": 0}], device)
         logits = model(batch["vox"], batch["cell_idx"], batch["cell_mask"], batch["feats"], batch["cand_mask"])[0]
+        if stop_mode == "never":
+            logits = logits.clone()
+            logits[-1] = float("-inf")
         if temperature > 0 and rng is not None:
             probs = torch.softmax(logits / temperature, -1).cpu().numpy().astype(np.float64)
             probs = np.nan_to_num(probs) / max(np.nan_to_num(probs).sum(), 1e-12)
@@ -67,8 +75,9 @@ def rollout(model: BrickPolicy, target: np.ndarray, catalog: Catalog, max_pieces
 
 
 class SFTGenerator:
-    def __init__(self, ckpt: Path = DEFAULT_CKPT, device: str | None = None):
-        self.device = torch.device(device or ("mps" if torch.backends.mps.is_available() else "cpu"))
+    def __init__(self, ckpt: Path = DEFAULT_CKPT, device: str | None = None, stop_mode: str = "learned", name: str = GENERATOR_NAME):
+        self.stop_mode, self.name = stop_mode, name
+        self.device = torch.device(device or DEFAULT_DEVICE)
         self.ckpt_path = ckpt
         self.model, self.ck = load_policy(ckpt, self.device)
         self.version = self.ck.get("version", "0.1.0")
@@ -78,8 +87,10 @@ class SFTGenerator:
         t0 = time.perf_counter()
         rng = np.random.default_rng(seed)
         cancel = (lambda: (cancellation and cancellation()) or (time_budget_s is not None and time.perf_counter() - t0 > time_budget_s))
-        raw, diag = rollout(self.model, target, catalog, constraints.max_pieces, self.device, temperature, rng, constraints.color_id, cancel)
-        info = GeneratorInfo(name=GENERATOR_NAME, version=self.version, seed=seed, strategy="greedy_decode" if temperature == 0 else f"sample_t{temperature}")
+        raw, diag = rollout(self.model, target, catalog, constraints.max_pieces, self.device, temperature, rng, constraints.color_id, cancel,
+                            stop_mode=self.stop_mode)
+        strategy = ("greedy_decode" if temperature == 0 else f"sample_t{temperature}") + ("" if self.stop_mode == "learned" else f"_stop_{self.stop_mode}")
+        info = GeneratorInfo(name=self.name, version=self.version, seed=seed, strategy=strategy)
         build, report, m = finalize_candidate(raw, target, catalog, constraints, info, build_id)
         diagnostics = {"checkpoint": str(self.ckpt_path.name), "raw_pieces": len(raw), **diag, **{k: v for k, v in m.items() if k != "plan_diagnostics"},
                        "target_cells": int(target.sum()), "seconds": round(time.perf_counter() - t0, 3)}
@@ -92,14 +103,20 @@ class SFTGenerator:
         return res
 
 
-_cached: dict[str, SFTGenerator] = {}
+_cached: dict[tuple, SFTGenerator] = {}
 
 
-def sft_generate(target, catalog, constraints, seed=0, cancellation=None, build_id="build", time_budget_s=None, ckpt: Path = DEFAULT_CKPT):
-    key = str(ckpt)
+def sft_generate(target, catalog, constraints, seed=0, cancellation=None, build_id="build", time_budget_s=None, ckpt: Path = DEFAULT_CKPT,
+                 stop_mode: str = "learned", name: str = GENERATOR_NAME):
+    key = (str(ckpt), stop_mode, name)
     if key not in _cached:
-        _cached[key] = SFTGenerator(ckpt)
+        _cached[key] = SFTGenerator(ckpt, stop_mode=stop_mode, name=name)
     return _cached[key](target, catalog, constraints, seed, cancellation, build_id, time_budget_s)
 
 
+def sft_generate_nostop(target, catalog, constraints, seed=0, cancellation=None, build_id="build", time_budget_s=None, ckpt: Path = DEFAULT_CKPT):
+    return sft_generate(target, catalog, constraints, seed, cancellation, build_id, time_budget_s, ckpt, stop_mode="never", name="sft_v1_nostop")
+
+
 register(GENERATOR_NAME, sft_generate)
+register("sft_v1_nostop", sft_generate_nostop)

@@ -54,15 +54,21 @@ def candidate_tensors(c: Candidates, grid: tuple[int, int, int]) -> tuple[np.nda
     """Per-candidate flat voxel indices (padded to 8 cells), mask, and normalised scalar features."""
     nx, ny, nz = grid
     n = len(c)
-    cell_idx = np.full((n, 8), -1, dtype=np.int64)
-    cell_mask = np.zeros((n, 8), dtype=bool)
+    if n == 0:
+        return np.full((0, 8), -1, dtype=np.int64), np.zeros((0, 8), dtype=bool), np.zeros((0, CAND_FEATS), dtype=np.float32)
+    x, y, k = c.x.astype(np.int64), c.y.astype(np.int64), c.k.astype(np.int64)
+    w, d = c.w.astype(np.int64), c.d.astype(np.int64)
+    # Footprints are at most 4x4 with w*d <= 8 cells: enumerate a 4x4 offset grid, mask, and compact valid cells to the front.
+    dx = np.repeat(np.arange(4), 4)[None, :]
+    dy = np.tile(np.arange(4), 4)[None, :]
+    valid = (dx < w[:, None]) & (dy < d[:, None])  # [n,16], row-major over (dx, dy) like the reference loop
+    cells = ((x[:, None] + dx) * ny + (y[:, None] + dy)) * nz + k[:, None]
+    order = np.argsort(~valid, axis=1, kind="stable")[:, :8]
+    cell_mask = np.take_along_axis(valid, order, axis=1)
+    cell_idx = np.where(cell_mask, np.take_along_axis(cells, order, axis=1), -1)
     feats = np.zeros((n, CAND_FEATS), dtype=np.float32)
-    for i in range(n):
-        cells = [(xx * ny + yy) * nz + int(c.k[i]) for xx in range(c.x[i], c.x[i] + c.w[i]) for yy in range(c.y[i], c.y[i] + c.d[i])]
-        cell_idx[i, :len(cells)] = cells
-        cell_mask[i, :len(cells)] = True
-        feats[i, int(c.part[i])] = 1.0
-        feats[i, N_PARTS:] = [c.rot[i] / 90.0, c.x[i] / nx, c.y[i] / ny, c.k[i] / nz, c.new_target[i] / 8.0, c.filler[i] / 8.0, c.support[i] / 8.0]
+    feats[np.arange(n), c.part.astype(np.int64)] = 1.0
+    feats[:, N_PARTS:] = np.stack([c.rot / 90.0, x / nx, y / ny, k / nz, c.new_target / 8.0, c.filler / 8.0, c.support / 8.0], axis=1)
     return cell_idx, cell_mask, feats
 
 
