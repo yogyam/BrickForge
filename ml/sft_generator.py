@@ -2,6 +2,7 @@
 Free-running greedy decode (or seeded sampling) over legal candidates, then the shared finalize step."""
 from __future__ import annotations
 
+import functools
 import os
 import time
 from pathlib import Path
@@ -148,3 +149,5 @@ def sft_generate_bestof(target, catalog, constraints, seed=0, cancellation=None,
 register(GENERATOR_NAME, sft_generate)
 register("sft_v1_nostop", sft_generate_nostop)
 register(f"sft_v1_bo{BEST_OF_N}", sft_generate_bestof)
+# M6 part 3: same recipe retrained on the rebalanced real-mesh dataset (docs/rl.md)
+register("sft_v2", functools.partial(sft_generate, ckpt=ROOT / "checkpoints" / "sft_v2.pt", name="sft_v2"))

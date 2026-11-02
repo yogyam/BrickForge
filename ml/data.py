@@ -197,6 +197,7 @@ class Example:
     placements: list[dict]      # in planned order
     iou: float
     budget: int
+    coverage: float = 1.0       # teacher coverage; examples below 0.5 exist only in RL pools (M6, no teacher needed)
 
 
 def _split_for(instance_id: str) -> str:
@@ -204,15 +205,17 @@ def _split_for(instance_id: str) -> str:
     return "train" if h < 80 else ("val" if h < 90 else "test")
 
 
-def make_example(ex_id: str, family: str, target: np.ndarray, catalog: Catalog, budget: int = 100) -> Example | None:
+def make_example(ex_id: str, family: str, target: np.ndarray, catalog: Catalog, budget: int = 100, min_coverage: float = 0.5) -> Example | None:
+    """min_coverage 0.5 (default) keeps only targets with a usable teacher build, as SFT needs. RL pools pass 0.0:
+    the target is kept with whatever partial build the teacher managed, and `coverage` records how good it was."""
     bounds = Bounds(x_studs=target.shape[0], y_studs=target.shape[1], z_plates=target.shape[2] * 3)
     res = greedy_generate(target, catalog, Constraints(max_pieces=budget, bounds=bounds, color_id="4"), build_id=ex_id)
-    if res.build is None or res.instruction_status != "planned" or res.coverage < 0.5:
+    if res.build is None or res.coverage < min_coverage or (min_coverage >= 0.5 and res.instruction_status != "planned"):
         return None
     by_id = {p.id: p for p in res.build.placements}
-    ordered = [by_id[i] for s in res.build.steps for i in s.added_placement_ids]
+    ordered = [by_id[i] for s in res.build.steps for i in s.added_placement_ids] if res.build.steps else list(res.build.placements)
     return Example(ex_id, family, _split_for(ex_id), tuple(target.shape), [list(map(int, c)) for c in np.argwhere(target)],
-                   [p.model_dump() for p in ordered], round(res.fidelity, 4), budget)
+                   [p.model_dump() for p in ordered], round(res.fidelity, 4), budget, round(res.coverage, 4))
 
 
 def build_synthetic(n_per_family: int, seed: int = 0, grid=GRID, catalog: Catalog | None = None, min_cells: int = 8, max_cells: int = 700) -> list[Example]:
@@ -234,7 +237,8 @@ def build_synthetic(n_per_family: int, seed: int = 0, grid=GRID, catalog: Catalo
     return out
 
 
-def build_thingi_pool(n: int, catalog: Catalog | None = None, grid=GRID, max_faces: int = 50_000, progress: bool = True) -> list[Example]:
+def build_thingi_pool(n: int, catalog: Catalog | None = None, grid=GRID, max_faces: int = 50_000, progress: bool = True,
+                      min_coverage: float = 0.5) -> list[Example]:
     """Download (if needed) and voxelize Thingi10K training meshes, excluding every held-out thing id."""
     from brickcore.mesh import MeshError, load_mesh, normalize, voxelize
 
@@ -265,7 +269,7 @@ def build_thingi_pool(n: int, catalog: Catalog | None = None, grid=GRID, max_fac
             continue
         if not (8 <= int(t.sum()) <= 700):
             continue
-        ex = make_example(f"thingi_{m['thing_id']}_{m['file_id']}", "thingi", t, catalog)
+        ex = make_example(f"thingi_{m['thing_id']}_{m['file_id']}", "thingi", t, catalog, min_coverage=min_coverage)
         if ex is not None:
             ex.split = _split_for(f"thing_{m['thing_id']}")  # all files of one thing share a split
             out.append(ex)
@@ -309,6 +313,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="build_sft_data")
     ap.add_argument("--synthetic-per-family", type=int, default=200)
     ap.add_argument("--thingi", type=int, default=0, help="number of Thingi10K training meshes to add (downloads)")
+    ap.add_argument("--thingi-max-faces", type=int, default=50_000)
+    ap.add_argument("--thingi-min-coverage", type=float, default=0.5, help="0.0 keeps targets the teacher handles badly (RL only)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(DATA_DIR / "examples.jsonl"))
     args = ap.parse_args(argv)
@@ -317,10 +323,11 @@ def main(argv: list[str] | None = None) -> int:
     ex = build_synthetic(args.synthetic_per_family, seed=args.seed, catalog=catalog)
     print(f"synthetic examples: {len(ex)} in {__import__('time').perf_counter() - t0:.1f}s", file=sys.stderr)
     if args.thingi:
-        ex += build_thingi_pool(args.thingi, catalog=catalog)
+        ex += build_thingi_pool(args.thingi, catalog=catalog, max_faces=args.thingi_max_faces, min_coverage=args.thingi_min_coverage)
     save_examples(ex, Path(args.out))
     from collections import Counter
     print(json.dumps({"examples": len(ex), "by_split": dict(Counter(e.split for e in ex)), "by_family": dict(Counter(e.family for e in ex)),
+                      "teacher_coverage_below_0_5": sum(e.coverage < 0.5 for e in ex),
                       "mean_pieces": round(sum(len(e.placements) for e in ex) / max(len(ex), 1), 1), "mean_teacher_iou": round(sum(e.iou for e in ex) / max(len(ex), 1), 4)}))
     return 0
 

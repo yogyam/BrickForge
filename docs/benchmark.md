@@ -30,7 +30,8 @@ seconds, hardware, git commit, catalog version.
 `checkpoints/sft_v1.pt` (override with `BRICKFORGE_SFT_CKPT`) and decode on CPU by default
 (`BRICKFORGE_SFT_DEVICE`), which is as fast as Metal for one target and reproducible across processes. Their records
 carry additive diagnostic fields absent from `baseline_v1`: `raw_pieces`, `dropped_disconnected`,
-`components_before_trim`, `stop_reason`. Results: `docs/benchmarks/sft_v1.*` (M5) and `docs/benchmarks/rl_v1.*` (M6, all five generators), analysed in `docs/sft.md` and `docs/rl.md`.
+`components_before_trim`, `stop_reason`. Results: `docs/benchmarks/sft_v1.*` (M5), `docs/benchmarks/rl_v1.*` and `docs/benchmarks/rl_v2.*` (M6), analysed in `docs/sft.md` and `docs/rl.md`.
+The summarizer's `mean_iou` averages over valid builds only; comparisons between generators with different validity rates use the mean over attempted cases with failed builds scored 0 (computed from the JSONL, as in `docs/rl.md`).
 `sft_v1_bo8` is best-of-8 sampling from the same SFT checkpoint (seeded; ~8x decode cost). `rl_v1` loads
 `checkpoints/rl_v1.pt` (`BRICKFORGE_RL_CKPT`, `BRICKFORGE_RL_DEVICE`); see `docs/rl.md`.
 

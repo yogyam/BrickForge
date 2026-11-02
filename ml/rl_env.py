@@ -192,8 +192,9 @@ def load_policy_for_rl(ckpt_path, device: torch.device, conn_feats: bool = True,
 
 @torch.no_grad()
 def rollout(model: BrickPolicy, state: AssemblyState, max_pieces: int, device: torch.device, sample: bool = False,
-            rng: np.random.Generator | None = None, cancel=None, record: bool = False) -> dict:
-    """Run one episode. With record=True returns per-step items/actions/logps/values for PPO."""
+            rng: np.random.Generator | None = None, cancel=None, record: bool = False, stop_mode: str = "learned") -> dict:
+    """Run one episode. With record=True returns per-step items/actions/logps/values for PPO.
+    stop_mode "never" masks the STOP action (decode-time choice, made on the SFT test split; see docs/rl.md)."""
     steps = []
     stop_reason = "cap"
     for _ in range(max_pieces):
@@ -207,6 +208,9 @@ def rollout(model: BrickPolicy, state: AssemblyState, max_pieces: int, device: t
         it = state.item()
         batch = collate([it], device)
         logits, value = model.forward_with_value(batch["vox"], batch["cell_idx"], batch["cell_mask"], batch["feats"], batch["cand_mask"])
+        if stop_mode == "never":
+            logits = logits.clone()
+            logits[0, len(c)] = float("-inf")
         logp = torch.log_softmax(logits[0], -1)
         if sample:
             probs = logp.exp().cpu().numpy().astype(np.float64)

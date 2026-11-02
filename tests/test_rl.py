@@ -113,6 +113,12 @@ def test_rl_generator_registers_from_checkpoint(tmp_path, catalog, monkeypatch):
     assert res.diagnostics["checkpoint"] == "rl_tiny.pt" and "components_before_trim" in res.diagnostics
     if res.build is not None:
         assert res.build.generator.name == "rl_v1" and validate_build(res.build, catalog)["ok"]
+    # masked STOP: the episode can only end on an empty candidate set or the cap
+    res2 = gen(t, catalog, Constraints(max_pieces=30, bounds=Bounds(x_studs=16, y_studs=16, z_plates=24), color_id="4"), seed=0, ckpt=ck,
+               stop_mode="never")
+    assert res2.diagnostics["stop_reason"] in ("no_legal_candidate", "cap")
+    if res2.build is not None:
+        assert res2.build.generator.strategy == "greedy_decode_stop_never"
 
 
 def test_ppo_smoke_two_iterations(tmp_path, catalog, monkeypatch):

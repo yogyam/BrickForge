@@ -153,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--overfit", type=int, default=0)
     ap.add_argument("--eval-every", type=int, default=10)
     ap.add_argument("--eval-n", type=int, default=64)
+    ap.add_argument("--real-frac", type=float, default=0.0, help="fraction of episodes (and of the eval subset) drawn from real meshes; 0 = natural mix")
     ap.add_argument("--device", default=None)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args(argv)
@@ -167,7 +168,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.overfit:
         train = train[:args.overfit]
         val = train
-    eval_set = val if len(val) <= args.eval_n else random.Random(1234).sample(val, args.eval_n)
+    real_idx = [i for i, e in enumerate(train) if e.family == "thingi"]
+    synth_idx = [i for i, e in enumerate(train) if e.family != "thingi"]
+    real_frac = args.real_frac if (real_idx and synth_idx) else 0.0
+    if real_frac:
+        # the eval subset mirrors the episode mix, so checkpoint selection is made on the distribution being trained
+        vr, vs = [e for e in val if e.family == "thingi"], [e for e in val if e.family != "thingi"]
+        k = min(round(args.eval_n * real_frac), len(vr))
+        er = random.Random(1234)
+        eval_set = er.sample(vr, k) + er.sample(vs, min(args.eval_n - k, len(vs)))
+    else:
+        eval_set = val if len(val) <= args.eval_n else random.Random(1234).sample(val, args.eval_n)
+    print(f"train={len(train)} real={len(real_idx)} real_frac={real_frac} eval_n={len(eval_set)} eval_real={sum(e.family == 'thingi' for e in eval_set)}", file=sys.stderr)
     cfg = {"conn_feats": not args.no_conn_feats, "main_channel": not args.no_main_channel, "stab_weight": args.stab_weight}
 
     model, init_ck = load_policy_for_rl(Path(args.init), device, cfg["conn_feats"], cfg["main_channel"])
@@ -196,7 +208,12 @@ def main(argv: list[str] | None = None) -> int:
     rng = random.Random(args.seed)
     for it in range(1, args.iters + 1):
         t1 = time.perf_counter()
-        tasks = [(rng.randrange(len(train)), rng.randrange(8) if args.augment else 0, rng.randrange(1 << 30)) for _ in range(args.episodes)]
+        def pick() -> int:
+            if real_frac and rng.random() < real_frac:
+                return rng.choice(real_idx)
+            return rng.choice(synth_idx) if real_frac else rng.randrange(len(train))
+
+        tasks = [(pick(), rng.randrange(8) if args.augment else 0, rng.randrange(1 << 30)) for _ in range(args.episodes)]
         model.eval()
         eps = collect(model, train, catalog, tasks, cfg, args.workers, sample=True, record=True)
         model.train()

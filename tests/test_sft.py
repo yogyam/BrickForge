@@ -114,3 +114,19 @@ def test_sft_generator_registers_and_runs_from_a_checkpoint(catalog, tmp_path, m
     assert res2.diagnostics["stop_reason"] in ("no_legal_candidate", "cap")
     if res2.build is not None:
         assert res2.build.generator.name == "sft_v1_nostop" and validate_build(res2.build, catalog)["ok"]
+
+
+def test_make_example_min_coverage_and_backward_compatible_examples(catalog, tmp_path):
+    from ml.data import Example, load_examples, save_examples
+    t = synth_target("box", np.random.default_rng(21))
+    ex = make_example("c", "box", t, catalog)
+    assert ex is not None and 0.5 <= ex.coverage <= 1.0
+    # an RL pool keeps weak-teacher targets only when asked to
+    assert make_example("c", "box", t, catalog, min_coverage=0.0) is not None
+    # records written before the coverage field existed still load (coverage defaults to 1.0)
+    d = {k: v for k, v in ex.__dict__.items() if k != "coverage"}
+    (tmp_path / "old.jsonl").write_text(__import__("json").dumps(d) + "\n")
+    old = load_examples(tmp_path / "old.jsonl")
+    assert len(old) == 1 and old[0].coverage == 1.0 and isinstance(old[0], Example)
+    save_examples([ex], tmp_path / "new.jsonl")
+    assert load_examples(tmp_path / "new.jsonl")[0].coverage == ex.coverage

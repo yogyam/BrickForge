@@ -2,6 +2,7 @@
 through the same AssemblyState and the shared finalize step as every other generator."""
 from __future__ import annotations
 
+import functools
 import os
 import time
 from pathlib import Path
@@ -23,9 +24,9 @@ DEFAULT_DEVICE = os.environ.get("BRICKFORGE_RL_DEVICE", "cpu")
 
 
 class RLGenerator:
-    def __init__(self, ckpt: Path = DEFAULT_CKPT, device: str | None = None, name: str = GENERATOR_NAME):
+    def __init__(self, ckpt: Path = DEFAULT_CKPT, device: str | None = None, name: str = GENERATOR_NAME, stop_mode: str = "learned"):
         self.device = torch.device(device or DEFAULT_DEVICE)
-        self.ckpt_path, self.name = ckpt, name
+        self.ckpt_path, self.name, self.stop_mode = ckpt, name, stop_mode
         ck = torch.load(ckpt, map_location="cpu", weights_only=False)
         arch = ck["arch"]
         self.conn_feats = arch.get("extra_feats", 0) > 0
@@ -41,8 +42,9 @@ class RLGenerator:
             return bool(cancellation and cancellation()) or (time_budget_s is not None and time.perf_counter() - t0 > time_budget_s)
 
         st = AssemblyState(target, catalog, constraints.color_id, self.conn_feats, self.main_channel)
-        out = rollout(self.model, st, constraints.max_pieces, self.device, cancel=cancel)
-        info = GeneratorInfo(name=self.name, version=self.version, seed=seed, strategy="greedy_decode")
+        out = rollout(self.model, st, constraints.max_pieces, self.device, cancel=cancel, stop_mode=self.stop_mode)
+        strategy = "greedy_decode" + ("" if self.stop_mode == "learned" else f"_stop_{self.stop_mode}")
+        info = GeneratorInfo(name=self.name, version=self.version, seed=seed, strategy=strategy)
         build, report, m = finalize_candidate(st.placements, target, catalog, constraints, info, build_id)
         diagnostics = {"checkpoint": str(self.ckpt_path.name), "raw_pieces": len(st.placements), "stop_reason": out["stop_reason"],
                        **{k: v for k, v in m.items() if k != "plan_diagnostics"}, "target_cells": int(target.sum()), "seconds": round(time.perf_counter() - t0, 3)}
@@ -58,11 +60,18 @@ class RLGenerator:
 _cached: dict[str, RLGenerator] = {}
 
 
-def rl_generate(target, catalog, constraints, seed=0, cancellation=None, build_id="build", time_budget_s=None, ckpt: Path = DEFAULT_CKPT):
-    key = str(ckpt)
+def rl_generate(target, catalog, constraints, seed=0, cancellation=None, build_id="build", time_budget_s=None, ckpt: Path = DEFAULT_CKPT,
+                name: str = GENERATOR_NAME, stop_mode: str = "learned"):
+    key = f"{ckpt}|{name}|{stop_mode}"
     if key not in _cached:
-        _cached[key] = RLGenerator(ckpt)
+        _cached[key] = RLGenerator(ckpt, name=name, stop_mode=stop_mode)
     return _cached[key](target, catalog, constraints, seed, cancellation, build_id, time_budget_s)
 
 
 register(GENERATOR_NAME, rl_generate)
+# M6 part 3: PPO from sft_v2 on the rebalanced real-mesh dataset (docs/rl.md)
+register("rl_v2", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2.pt", name="rl_v2"))
+# STOP masked at decode time. Chosen on the SFT test split (never on the benchmark): +0.04 IoU on real meshes for both
+# checkpoints, no change on synthetic shapes (docs/rl.md, part 3).
+register("rl_v1_nostop", functools.partial(rl_generate, name="rl_v1_nostop", stop_mode="never"))
+register("rl_v2_nostop", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2.pt", name="rl_v2_nostop", stop_mode="never"))

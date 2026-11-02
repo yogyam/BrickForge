@@ -101,8 +101,11 @@ class ItemPool:
     (example, symmetry) pairs while the trainer consumes the previous pool. Keeps memory bounded
     (a full augmented precompute of 2k examples would need ~40 GB)."""
 
-    def __init__(self, train: list[Example], catalog, syms: list[int], pool_examples: int, seed: int, depth: int = 2):
+    def __init__(self, train: list[Example], catalog, syms: list[int], pool_examples: int, seed: int, depth: int = 2, real_frac: float = 0.0):
         self.train, self.catalog, self.syms, self.pool_examples = train, catalog, list(syms), pool_examples
+        self.real = [e for e in train if e.family == "thingi"]
+        self.synth = [e for e in train if e.family != "thingi"]
+        self.real_frac = real_frac if (self.real and self.synth) else 0.0
         self.rng = random.Random(seed + 1)
         self.q: queue.Queue = queue.Queue(maxsize=depth)
         self.missing = 0
@@ -111,9 +114,17 @@ class ItemPool:
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.thread.start()
 
+    def _sample_examples(self) -> list[Example]:
+        if not self.real_frac:
+            return self.rng.sample(self.train, min(self.pool_examples, len(self.train)))
+        k_real = round(self.pool_examples * self.real_frac)  # real meshes weighted up to real_frac of the draws
+        picks = [self.rng.choice(self.real) for _ in range(k_real)] + [self.rng.choice(self.synth) for _ in range(self.pool_examples - k_real)]
+        self.rng.shuffle(picks)
+        return picks
+
     def _build(self) -> list[dict]:
         items = []
-        for ex in self.rng.sample(self.train, min(self.pool_examples, len(self.train))):
+        for ex in self._sample_examples():
             its, miss = make_items(ex, self.catalog, sym=self.rng.choice(self.syms))
             items += its
             self.missing += miss
@@ -157,6 +168,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pool-examples", type=int, default=96, help="streaming mode: examples per item pool")
     ap.add_argument("--pool-refresh", type=int, default=150, help="streaming mode: steps per pool before swapping")
     ap.add_argument("--precompute-max", type=int, default=512, help="precompute all items when train_examples*syms <= this; else stream")
+    ap.add_argument("--real-frac", type=float, default=0.0, help="streaming mode: fraction of sampled examples that are real meshes (0 = natural mix)")
+    ap.add_argument("--min-teacher-coverage", type=float, default=0.5, help="drop examples whose teacher build covers less than this")
     args = ap.parse_args(argv)
 
     torch.manual_seed(args.seed)
@@ -164,8 +177,8 @@ def main(argv: list[str] | None = None) -> int:
     np.random.seed(args.seed)
     device = pick_device(args.device)
     catalog = load_catalog()
-    train = load_examples(Path(args.data), "train")
-    val = load_examples(Path(args.data), "val")
+    train = [e for e in load_examples(Path(args.data), "train") if e.coverage >= args.min_teacher_coverage]
+    val = [e for e in load_examples(Path(args.data), "val") if e.coverage >= args.min_teacher_coverage]
     if args.overfit:
         train = train[:args.overfit]
         val = train
@@ -182,9 +195,9 @@ def main(argv: list[str] | None = None) -> int:
     streaming = len(train) * len(syms) > args.precompute_max and not args.profile
     pool = None
     if streaming:
-        pool = ItemPool(train, catalog, syms, args.pool_examples, args.seed)
+        pool = ItemPool(train, catalog, syms, args.pool_examples, args.seed, real_frac=args.real_frac)
         items = pool.next()
-        print(f"device={device} train_examples={len(train)} syms={len(syms)} mode=streaming pool_examples={args.pool_examples} "
+        print(f"device={device} train_examples={len(train)} real={len(pool.real)} real_frac={pool.real_frac} syms={len(syms)} mode=streaming pool_examples={args.pool_examples} "
               f"pool_refresh={args.pool_refresh} first_pool_items={len(items)} prep_s={time.perf_counter() - t0:.1f}", file=sys.stderr)
     else:
         for ex in train:

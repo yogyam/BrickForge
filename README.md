@@ -4,7 +4,7 @@ Converts a 3D mesh into a LEGO-compatible brick build, a parts list, and checked
 Research goal: compare a deterministic baseline, a supervised model, and RL under identical geometry and
 evaluation rules, across piece budgets and a structural stability model. See `BrickForge_PRD_Design_Doc.md`.
 
-**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked); ablations and photo input next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
+**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked; learned pipeline within 0.012 IoU of the search baseline at equal cost); ablations, seeds and photo input next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
 mesh normalization, voxelizer, greedy baseline, authoritative validator, assembly planner with insertion-path
 checks and replay validation, static force-model stability analysis, BOM/LDraw export, and a static viewer.
 Learned generators run through the same validator and planner as the baseline. No server. Nothing here is physically tested: every label reads
@@ -62,8 +62,8 @@ make sft-train                     # full run: 20k steps, augmentation, ~25 minu
 make sft-bench                     # frozen benchmark with greedy_v1, sft_v1, sft_v1_nostop, then audit
 ```
 
-Result (`docs/benchmarks/sft_v1.md`, 53 held-out cases, 200-piece cap): mean IoU greedy 0.719, sft_v1 0.651,
-sft_v1_nostop 0.652. The supervised policy matches the baseline on procedural shapes (0.81 vs 0.83) and trails on real
+Result (`docs/benchmarks/sft_v1.md`, 53 held-out cases, 200-piece cap, mean IoU over attempted cases with failed
+builds scored 0): greedy 0.705, sft_v1 0.614, sft_v1_nostop 0.639. The supervised policy matches the baseline on procedural shapes (0.81 vs 0.83) and trails on real
 meshes (0.59 vs 0.67). Before the single-component trim its occupancy IoU exceeds the teacher's; the gap is interlocking
 and dead-end avoidance, not coverage. Full analysis and the implications for RL are in `docs/sft.md`.
 
@@ -78,12 +78,18 @@ make rl-bench                      # frozen benchmark with greedy, sft, sft best
 The reward is the IoU of the build *after* the component trim plus a stability bonus, so the policy is trained on what
 the user actually receives.
 
-Result (`docs/benchmarks/rl_v1.md`, 53 held-out cases, 200-piece cap): mean IoU greedy 0.719, sft_v1 0.651,
-sft_v1_bo8 (best of 8 samples, 8x decode time) 0.699, **rl_v1 0.694**. RL beats imitation on 22 cases and loses on 5,
-halves the pieces dropped by the component trim, and matches best-of-8 at one eighth of its cost. It ties the frozen
-baseline on procedural shapes (0.762 vs 0.764) and still trails it on real meshes (0.603 vs 0.668), where the learned
-policies stop early on shapes outside the synthetic training families. Every procedural build is stable under the
-simplified static force model (not physically tested). Design, training curve and failure analysis: `docs/rl.md`.
+Result (`docs/benchmarks/rl_v2.md`, 53 held-out cases, 200-piece cap, mean IoU over attempted cases with failed
+builds scored 0): greedy 0.705, sft_v1 0.614, rl_v1 0.654, sft_v2 (rebalanced real-mesh data) 0.672,
+**rl_v2_nostop 0.693**. The learned pipeline ties the frozen search baseline on procedural shapes (0.826 vs 0.828),
+trails it by 0.015 on real meshes (0.653 vs 0.668), and matches its validity and stability counts, at the same decode
+time. RL beats its own SFT initialisation 26 cases to 3; the learned STOP action stays miscalibrated on real meshes and
+is masked at decode time (a choice made on the SFT test split, not the benchmark). All stability statements are under
+the simplified static force model (not physically tested). Design, training curves, the decode decision and the failure
+analysis: `docs/rl.md`.
+
+```sh
+make data-v2 sft-train-v2 rl-train-v2 rl-bench-v2   # the rebalanced-data ladder (~1.5 GB of CC meshes, ~2.5 h)
+```
 
 ## MCP server
 
