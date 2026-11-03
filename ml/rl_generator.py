@@ -75,3 +75,6 @@ register("rl_v2", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl
 # checkpoints, no change on synthetic shapes (docs/rl.md, part 3).
 register("rl_v1_nostop", functools.partial(rl_generate, name="rl_v1_nostop", stop_mode="never"))
 register("rl_v2_nostop", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2.pt", name="rl_v2_nostop", stop_mode="never"))
+# second training seed of the v2 ladder (sft_v2_s1 -> rl_v2_s1), same decode rule
+register("rl_v2_s1", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2_s1.pt", name="rl_v2_s1"))
+register("rl_v2_s1_nostop", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2_s1.pt", name="rl_v2_s1_nostop", stop_mode="never"))

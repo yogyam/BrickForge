@@ -151,3 +151,4 @@ register("sft_v1_nostop", sft_generate_nostop)
 register(f"sft_v1_bo{BEST_OF_N}", sft_generate_bestof)
 # M6 part 3: same recipe retrained on the rebalanced real-mesh dataset (docs/rl.md)
 register("sft_v2", functools.partial(sft_generate, ckpt=ROOT / "checkpoints" / "sft_v2.pt", name="sft_v2"))
+register("sft_v2_s1", functools.partial(sft_generate, ckpt=ROOT / "checkpoints" / "sft_v2_s1.pt", name="sft_v2_s1"))  # second training seed

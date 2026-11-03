@@ -2,7 +2,7 @@
 # sync daemon marks files under dot-directories as hidden, which makes Python skip the editable .pth.
 export UV_PROJECT_ENVIRONMENT ?= $(HOME)/.venvs/brickforge
 
-.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 clean
+.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds clean
 
 setup:
 	uv sync
@@ -64,3 +64,12 @@ rl-train-v2:
 rl-bench-v2:
 	uv run --group ml brickforge-bench run --suite all --generators greedy_v1 sft_v1 rl_v1 rl_v1_nostop sft_v2 rl_v2 rl_v2_nostop --budgets 50 100 200 --out docs/benchmarks/rl_v2
 	uv run --group ml brickforge-bench audit docs/benchmarks/rl_v2.jsonl
+
+# second training seed of the v2 ladder; the benchmark then carries both seeds of sft_v2 / rl_v2
+v2-seed1:
+	uv run --group ml python -m ml.train_sft --data data/sft/examples_v2.jsonl --name sft_v2_s1 --steps 20000 --augment --real-frac 0.5 --eval-every 1000 --eval-n 64 --seed 1
+	uv run --group ml python -m ml.train_rl --data data/sft/examples_v2.jsonl --init checkpoints/sft_v2_s1.pt --name rl_v2_s1 --iters 250 --episodes 128 --workers 8 --epochs 3 --minibatch 128 --lr 1e-4 --augment --real-frac 0.5 --eval-every 10 --eval-n 64 --seed 1
+
+rl-bench-v2-seeds:
+	uv run --group ml brickforge-bench run --suite all --generators greedy_v1 sft_v2_s1 rl_v2_s1 rl_v2_s1_nostop --budgets 50 100 200 --out docs/benchmarks/rl_v2_s1
+	uv run --group ml brickforge-bench audit docs/benchmarks/rl_v2_s1.jsonl

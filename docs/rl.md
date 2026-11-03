@@ -153,9 +153,12 @@ cap, after-trim IoU:
 | rl_v1 | masked | 0.835 | 0.936 | 0.569 | 0.206 |
 | rl_v2 | learned | 0.828 | 0.937 | 0.542 | 0.147 |
 | rl_v2 | masked | 0.840 | 0.939 | 0.581 | 0.208 |
+| rl_v2_s1 (seed 1, added 2026-11-03) | learned | 0.821 | 0.931 | 0.533 | 0.141 |
+| rl_v2_s1 | masked | 0.835 | 0.935 | 0.574 | 0.204 |
 
-Masking STOP never costs anything on procedural shapes and gains about 0.04 on real meshes for both RL checkpoints,
-so `rl_v1_nostop` and `rl_v2_nostop` are registered and benchmarked alongside the learned-STOP decodes. The learned
+Masking STOP never costs anything on procedural shapes and gains about 0.04 on real meshes for all three RL
+checkpoints, so `rl_v1_nostop`, `rl_v2_nostop` and `rl_v2_s1_nostop` are registered and benchmarked alongside the
+learned-STOP decodes. The learned
 STOP remains miscalibrated on real meshes even after RL on them (v2); the reward does penalise early stopping, but the
 policy still prefers STOP on shapes where every remaining candidate looks poor. Also visible: the data change alone
 (sft_v1 -> sft_v2) gains little at the SFT stage; RL lifts both to within 0.01 of the teacher on this split.
@@ -205,6 +208,48 @@ What the numbers say:
    loses by more than 0.35: greedy 0.80, rl_v2_nostop 0.45 with 19 of 39 pieces trimmed as unconnected. Thin-walled
    shells with interior structure are where the search's exhaustive candidate scan still beats a learned preference.
 
+### Second training seed (`docs/benchmarks/rl_v2_s1.md`, 53 cases, 636 records, audit passed 2026-11-03)
+
+The v2 ladder was retrained end to end with training seed 1 (`make v2-seed1 rl-bench-v2-seeds`): sft_v2_s1 20k steps
+(25 min, best val 0.851 at step 15k), rl_v2_s1 250 PPO iterations from it (2 h 22 min, best checkpoint at iteration
+180: validation IoU 0.724 -> 0.791 on the half-real-mesh subset, fragmentation 38 % -> 22 %, 95 % stable, teacher
+0.805). The STOP decision was re-made on the SFT test split (table above, not on the benchmark): masking again gains
+0.04 on real meshes and nothing on procedural shapes, so `rl_v2_s1_nostop` is the decode. Same frozen suite; greedy
+rows identical to `baseline_v1` (159/159).
+
+Mean after-trim IoU over the 52 attempted cases, both seeds: mean, with the seed-0 to seed-1 range in brackets.
+
+| arm | 50 | 100 | 200 | procedural @200 | Thingi10K @200 | W / L vs greedy @200 (s0; s1) |
+|---|---|---|---|---|---|---|
+| greedy_v1 (frozen baseline) | 0.621 | 0.696 | **0.705** | 0.828 | 0.668 | |
+| sft_v2 | 0.566 (0.559-0.573) | 0.653 (0.643-0.663) | 0.662 (0.652-0.672) | 0.788 (0.783-0.793) | 0.624 (0.613-0.636) | 4/26; 4/28 |
+| rl_v2 (learned STOP) | 0.583 (0.573-0.593) | 0.657 (0.648-0.666) | 0.667 (0.659-0.675) | 0.803 (0.803-0.803) | 0.626 (0.615-0.637) | 7/27; 7/25 |
+| **rl_v2_nostop** | 0.609 (0.607-0.611) | 0.682 (0.681-0.684) | **0.693** (0.693-0.693) | 0.825 (0.824-0.826) | 0.653 (0.653-0.654) | 10/16; 11/19 |
+
+Seed 1 alone at the 200 cap: sft_v2_s1 0.652 (valid 48/53, stable 44/53), rl_v2_s1 0.675 (48/53, 46/53),
+rl_v2_s1_nostop 0.693 (51/53, 47/53), decode 0.13 to 0.15 s/case. Head to head rl_v2_s1_nostop beats sft_v2_s1
+27 / 9 / 16 and splits 14 / 16 / 22 against the seed-0 rl_v2_nostop.
+
+What the second seed changes:
+
+1. **The headline reproduces.** rl_v2_nostop ends at 0.693 for both seeds (range 0.000 at the 200 cap, 0.004 at 50)
+   and sits 0.012 behind the search either way. The per-case picture is also stable: 12 cases are lost to greedy in
+   both seeds (`proc_sphere`, `proc_wedge`, and ten real meshes including `thingi_39108` at 0.80 vs 0.45 / 0.42) and
+   the same 6 real meshes are won in both.
+2. **RL removes the SFT seed spread.** The SFT stage differs by 0.020 between seeds (0.672 vs 0.652); RL then adds
+   +0.021 to seed 0 and +0.041 to seed 1 and both land on 0.693. The RL gain over its own initialisation is therefore
+   +0.02 to +0.04 (positive in both seeds, 26/3 and 27/9 head to head). The data-rebalancing gain at the SFT stage,
+   +0.058 and +0.038 against the single sft_v1 seed, is less precisely known than the seed-0 table suggested.
+3. **The learned STOP fails on different meshes per seed.** Seed 1 stops before placing anything on `thingi_108578`,
+   `42025` and `567026` (seed 0: `39108`, `110201`, `111878`, `567026`); only `567026` is shared. The cost of the
+   learned STOP versus masking is 0.018 (seed 1) to 0.034 (seed 0).
+4. **Stability is the one count where seed 1 is slightly worse**: 47/53 stable at the 200 cap against 49/53 for
+   seed 0 and for greedy, with identical validity (51/53). Stable here means stable under the simplified static force
+   model; not physically tested.
+
+Two seeds give a range, not a confidence interval; the paper states both per-seed numbers and the range. The v1 arms
+(sft_v1, rl_v1) and the ablations remain single-seed.
+
 ### What this means for the paper
 
 Piece budget vs fidelity across greedy / SFT / SFT+RL is complete at 50/100/200 for every arm, with the controlled
@@ -212,7 +257,8 @@ ladder sft_v1 -> rl_v1 and sft_v2 -> rl_v2 isolating the RL effect at each data 
 the data effect. The defensible claim: a 100k-parameter policy trained in under five hours on a laptop reaches 98 % of
 a hand-engineered search's fidelity at equal decode cost, with RL rather than more supervised data providing most of
 the gain beyond imitation; the search keeps a small lead on thin shells, and learned stopping remains an open problem.
+The endpoint is reproduced by a second training seed (0.693 in both), so the sft -> rl difference of +0.02 to +0.04 is
+stated with its range rather than as one observation.
 
-Remaining for the paper: the two ablations (`--stab-weight 0`, `--no-conn-feats --no-main-channel`, about 1.6 h each
-at the v2 settings), and seeds: every number above is one training seed, so the sft/rl differences of 0.02 to 0.04 need
-at least a second seed before they are stated as more than observed.
+Remaining for the paper: the two ablations (`--stab-weight 0`, `--no-conn-feats --no-main-channel`, about 2 h each
+at the v2 settings, one seed each), and optionally a second seed for the v1 arms.
