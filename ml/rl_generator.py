@@ -78,3 +78,8 @@ register("rl_v2_nostop", functools.partial(rl_generate, ckpt=ROOT / "checkpoints
 # second training seed of the v2 ladder (sft_v2_s1 -> rl_v2_s1), same decode rule
 register("rl_v2_s1", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2_s1.pt", name="rl_v2_s1"))
 register("rl_v2_s1_nostop", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / "rl_v2_s1.pt", name="rl_v2_s1_nostop", stop_mode="never"))
+# ablations of rl_v2 (same data, init, seed and settings): no stability term in the reward; no connectivity inputs
+# (the union-find candidate features and the main-component voxel channel). Architecture is read from the checkpoint.
+for _abl in ("nostab", "noconn"):
+    register(f"rl_v2_{_abl}", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / f"rl_v2_{_abl}.pt", name=f"rl_v2_{_abl}"))
+    register(f"rl_v2_{_abl}_nostop", functools.partial(rl_generate, ckpt=ROOT / "checkpoints" / f"rl_v2_{_abl}.pt", name=f"rl_v2_{_abl}_nostop", stop_mode="never"))

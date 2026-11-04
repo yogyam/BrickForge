@@ -155,10 +155,13 @@ cap, after-trim IoU:
 | rl_v2 | masked | 0.840 | 0.939 | 0.581 | 0.208 |
 | rl_v2_s1 (seed 1, added 2026-11-03) | learned | 0.821 | 0.931 | 0.533 | 0.141 |
 | rl_v2_s1 | masked | 0.835 | 0.935 | 0.574 | 0.204 |
+| rl_v2_nostab (ablation, 2026-11-03) | learned | 0.834 | 0.940 | 0.559 | 0.188 |
+| rl_v2_nostab | masked | 0.842 | 0.941 | 0.587 | 0.223 |
+| rl_v2_noconn (ablation, 2026-11-03) | learned | 0.766 | 0.885 | 0.455 | 0.129 |
+| rl_v2_noconn | masked | 0.805 | 0.906 | 0.543 | 0.197 |
 
-Masking STOP never costs anything on procedural shapes and gains about 0.04 on real meshes for all three RL
-checkpoints, so `rl_v1_nostop`, `rl_v2_nostop` and `rl_v2_s1_nostop` are registered and benchmarked alongside the
-learned-STOP decodes. The learned
+Masking STOP never costs anything on procedural shapes and gains 0.03 to 0.09 on real meshes for all five RL
+checkpoints, so every RL arm is registered and benchmarked in a `_nostop` variant alongside the learned-STOP decode. The learned
 STOP remains miscalibrated on real meshes even after RL on them (v2); the reward does penalise early stopping, but the
 policy still prefers STOP on shapes where every remaining candidate looks poor. Also visible: the data change alone
 (sft_v1 -> sft_v2) gains little at the SFT stage; RL lifts both to within 0.01 of the teacher on this split.
@@ -250,6 +253,55 @@ What the second seed changes:
 Two seeds give a range, not a confidence interval; the paper states both per-seed numbers and the range. The v1 arms
 (sft_v1, rl_v1) and the ablations remain single-seed.
 
+### Ablations (`docs/benchmarks/rl_v2_ablations.md`, 53 cases, 795 records, audit passed 2026-11-03)
+
+Two arms retrained from the same sft_v2 checkpoint with seed 0 and the rl_v2 settings (`make rl-ablations
+rl-bench-v2-ablations`, about 2 h 25 min each), changing one thing:
+
+- **rl_v2_nostab**: `--stab-weight 0`, so the reward is the after-trim IoU alone. Best validation IoU 0.786 at
+  iteration 230 (rl_v2: 0.781 at 170); validation stable rate 98 % in both.
+- **rl_v2_noconn**: `--no-conn-feats --no-main-channel`, so the policy sees neither the union-find candidate features
+  nor the main-component voxel channel (the architecture is read from the checkpoint at load time). Best validation IoU
+  0.758 at iteration 220.
+
+The STOP decision was re-made for each on the SFT test split (table above): masking gains 0.03 (nostab) and 0.09
+(noconn) on real meshes and never loses on procedural shapes, so the masked decodes are the ablation results and the
+learned-STOP rows are reported for completeness. Greedy rows identical to `baseline_v1` (159/159).
+
+Mean after-trim IoU over the 52 attempted cases, failed builds scored 0:
+
+| generator | 50 | 100 | 200 | procedural @200 | Thingi10K @200 | valid @200 | stable @200 | vs greedy @200 | vs rl_v2_nostop @200 |
+|---|---|---|---|---|---|---|---|---|---|
+| greedy_v1 (frozen baseline) | 0.621 | 0.696 | **0.705** | 0.828 | 0.668 | 51/53 | 49/53 | | |
+| rl_v2_nostop (reference) | 0.607 | 0.681 | **0.693** | 0.826 | 0.653 | 51/53 | 49/53 | 10 / 16 / 26 | |
+| rl_v2_nostab | 0.569 | 0.636 | 0.644 | 0.789 | 0.601 | 46/53 | 46/53 | | |
+| rl_v2_nostab_nostop | 0.603 | 0.677 | 0.686 | 0.823 | 0.645 | 51/53 | 49/53 | 9 / 21 / 22 | 7 / 16 / 29 |
+| rl_v2_noconn | 0.522 | 0.586 | 0.595 | 0.792 | 0.536 | 45/53 | 45/53 | | |
+| rl_v2_noconn_nostop | 0.605 | 0.680 | 0.690 | 0.824 | 0.650 | 51/53 | 49/53 | 7 / 24 / 21 | 7 / 18 / 27 |
+
+What the ablations say:
+
+1. **The stability reward does not make the builds stable; the hard constraints do.** Without the term, stability
+   is identical to rl_v2_nostop and to greedy: 147 of 153 valid builds stable across the three budgets, the same two
+   cases unstable at the 200 cap (`thingi_108578`, `thingi_111878`), all under the simplified static force model (not
+   physically tested). The validator's support rule and the connected-component trim already enforce what the bonus
+   was meant to reward. Its fidelity effect is 0.007 at the 200 cap (7 wins / 16 losses / 29 ties against
+   rl_v2_nostop), a single-seed difference smaller than the 0.02 seed spread measured at the SFT stage. One case moves
+   a lot: `thingi_39108` falls from 0.45 to 0.25.
+2. **The connectivity inputs matter wherever the policy has to judge on its own, and the trim hides that at decode
+   time.** Where the policy's own STOP decides, removing them costs 0.064 on the benchmark (0.595 vs 0.659) with six
+   real meshes ending at zero pieces; on the 260-example SFT test split with STOP masked it costs 0.035 (0.805 vs
+   0.840, real meshes 0.543 vs 0.581); on validation 0.023. On the 52-case benchmark with STOP masked the means are
+   within 0.003 (0.690 vs 0.693) because one large win (`thingi_39108`, 0.78 vs 0.45) offsets 18 losses to 7 wins.
+   Head to head it is the weaker policy; the benchmark mean is too coarse to show it. The features' main job is
+   telling the policy which candidates attach to the main component and when a build is done; with STOP masked, the
+   trim does that cleanup for free after decoding.
+3. **The masked-STOP decode is the most robust finding in M6.** Across five RL checkpoints (two seeds, two ablations)
+   it gains 0.03 to 0.09 on real meshes on the test split and never loses on procedural shapes, and on the benchmark
+   it turns every learned-STOP arm (0.595 to 0.675) into one within 0.02 of the search (0.686 to 0.693).
+
+Both ablations are single-seed, like the v1 arms.
+
 ### What this means for the paper
 
 Piece budget vs fidelity across greedy / SFT / SFT+RL is complete at 50/100/200 for every arm, with the controlled
@@ -258,7 +310,8 @@ the data effect. The defensible claim: a 100k-parameter policy trained in under 
 a hand-engineered search's fidelity at equal decode cost, with RL rather than more supervised data providing most of
 the gain beyond imitation; the search keeps a small lead on thin shells, and learned stopping remains an open problem.
 The endpoint is reproduced by a second training seed (0.693 in both), so the sft -> rl difference of +0.02 to +0.04 is
-stated with its range rather than as one observation.
+stated with its range rather than as one observation. The ablations sharpen the claim: the result rests on hard
+constraints plus a trim, not on reward shaping (the stability term is redundant), and the connectivity inputs earn
+their place in the policy's own stopping and attachment decisions rather than in the masked-STOP benchmark mean.
 
-Remaining for the paper: the two ablations (`--stab-weight 0`, `--no-conn-feats --no-main-channel`, about 2 h each
-at the v2 settings, one seed each), and optionally a second seed for the v1 arms.
+Remaining for the paper: optionally a second seed for the v1 arms and the ablations; otherwise M6 is complete.

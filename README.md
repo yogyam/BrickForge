@@ -4,7 +4,7 @@ Converts a 3D mesh into a LEGO-compatible brick build, a parts list, and checked
 Research goal: compare a deterministic baseline, a supervised model, and RL under identical geometry and
 evaluation rules, across piece budgets and a structural stability model. See `BrickForge_PRD_Design_Doc.md`.
 
-**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked; learned pipeline within 0.012 IoU of the search baseline at equal cost, reproduced by a second training seed); ablations and photo input next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
+**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked; learned pipeline within 0.012 IoU of the search baseline at equal cost, reproduced by a second training seed, two ablations run); photo input and the paper next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
 mesh normalization, voxelizer, greedy baseline, authoritative validator, assembly planner with insertion-path
 checks and replay validation, static force-model stability analysis, BOM/LDraw export, and a static viewer.
 Learned generators run through the same validator and planner as the baseline. No server. Nothing here is physically tested: every label reads
@@ -86,11 +86,16 @@ time. RL beats its own SFT initialisation 26 cases to 3; the learned STOP action
 is masked at decode time (a choice made on the SFT test split, not the benchmark). All stability statements are under
 the simplified static force model (not physically tested). Design, training curves, the decode decision and the failure
 analysis: `docs/rl.md`. A second training seed lands on the same endpoint (sft_v2_s1 0.652 -> rl_v2_s1_nostop 0.693,
-`docs/benchmarks/rl_v2_s1.md`): the SFT stage varies by 0.02 between seeds and RL removes that spread.
+`docs/benchmarks/rl_v2_s1.md`): the SFT stage varies by 0.02 between seeds and RL removes that spread. Ablations
+(`docs/benchmarks/rl_v2_ablations.md`): dropping the stability reward leaves stability unchanged (the validator and
+trim already enforce it) and costs 0.007 IoU; dropping the connectivity inputs costs 0.035 on the SFT test split and
+0.064 under the learned STOP, but with STOP masked the trim recovers most of it on the benchmark mean (0.690 vs 0.693,
+7 wins / 18 losses head to head).
 
 ```sh
 make data-v2 sft-train-v2 rl-train-v2 rl-bench-v2   # the rebalanced-data ladder (~1.5 GB of CC meshes, ~2.5 h)
 make v2-seed1 rl-bench-v2-seeds                     # the same ladder with training seed 1 (~3 h)
+make rl-ablations rl-bench-v2-ablations             # no-stability-reward and no-connectivity-input arms (~5 h)
 ```
 
 ## MCP server

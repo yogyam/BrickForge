@@ -2,7 +2,7 @@
 # sync daemon marks files under dot-directories as hidden, which makes Python skip the editable .pth.
 export UV_PROJECT_ENVIRONMENT ?= $(HOME)/.venvs/brickforge
 
-.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds clean
+.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds rl-ablations rl-bench-v2-ablations clean
 
 setup:
 	uv sync
@@ -73,3 +73,11 @@ v2-seed1:
 rl-bench-v2-seeds:
 	uv run --group ml brickforge-bench run --suite all --generators greedy_v1 sft_v2_s1 rl_v2_s1 rl_v2_s1_nostop --budgets 50 100 200 --out docs/benchmarks/rl_v2_s1
 	uv run --group ml brickforge-bench audit docs/benchmarks/rl_v2_s1.jsonl
+
+rl-ablations:
+	uv run --group ml python -m ml.train_rl --data data/sft/examples_v2.jsonl --init checkpoints/sft_v2.pt --name rl_v2_nostab --stab-weight 0 --iters 250 --episodes 128 --workers 8 --epochs 3 --minibatch 128 --lr 1e-4 --augment --real-frac 0.5 --eval-every 10 --eval-n 64 --seed 0
+	uv run --group ml python -m ml.train_rl --data data/sft/examples_v2.jsonl --init checkpoints/sft_v2.pt --name rl_v2_noconn --no-conn-feats --no-main-channel --iters 250 --episodes 128 --workers 8 --epochs 3 --minibatch 128 --lr 1e-4 --augment --real-frac 0.5 --eval-every 10 --eval-n 64 --seed 0
+
+rl-bench-v2-ablations:
+	uv run --group ml brickforge-bench run --suite all --generators greedy_v1 rl_v2_nostab rl_v2_nostab_nostop rl_v2_noconn rl_v2_noconn_nostop --budgets 50 100 200 --out docs/benchmarks/rl_v2_ablations
+	uv run --group ml brickforge-bench audit docs/benchmarks/rl_v2_ablations.jsonl
