@@ -1,0 +1,16 @@
+Turning a 3D shape into a model made of interlocking toy bricks is a discrete design problem: every brick must sit on
+studs, nothing may overlap, the result must hold together, and a person must be able to assemble it in order. We study
+this problem under an explicit \emph{piece budget} and ask how fidelity scales with the number of bricks allowed. We
+build a shared pipeline (voxelize, place, trim to one connected component, plan an assembly order, validate, and check
+stability under a simplified static force model) and compare three generators inside it: a hand-written greedy search,
+a 100k-parameter 3D convolutional policy trained by imitating that search, and the same policy fine-tuned with proximal
+policy optimisation on the fidelity of the finished build. On a frozen benchmark of 53 held-out cases (procedural
+shapes and Creative Commons Thingi10K meshes) at budgets of 50, 100 and 200 pieces, the learned pipeline reaches a mean
+intersection-over-union of \meanRlVTwoNostopTwoHundred{} against the search's \meanGreedyVOneTwoHundred{} at the 200-piece cap, ties it on
+procedural shapes, matches its validity and model-stability counts, and decodes in under 0.2\,s per shape; a second
+training seed lands on the same number. Fidelity saturates between 100 and 200 pieces for every generator because
+the cap rarely binds. Three negative results are reported in full: the learned stop action stays miscalibrated on
+real meshes and is masked at decode time (a choice made on a held-out split, never on the benchmark); a stability term
+in the reward is redundant with the hard constraints; and the connectivity inputs matter where the policy judges on
+its own but not in the benchmark mean. All training ran in under five hours on one laptop. Code, benchmark records
+and an audit that regenerates every number are released.

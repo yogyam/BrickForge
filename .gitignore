@@ -16,7 +16,10 @@ checkpoints/
 *.ckpt
 *.pt
 # LaTeX build
-docs/paper/build/
+paper/build/
+paper/*.pdf
+# literature-search scratch notes (the report is committed under paper/)
+research_notes/
 *.aux
 *.log
 *.out

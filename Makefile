@@ -2,7 +2,7 @@
 # sync daemon marks files under dot-directories as hidden, which makes Python skip the editable .pth.
 export UV_PROJECT_ENVIRONMENT ?= $(HOME)/.venvs/brickforge
 
-.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds rl-ablations rl-bench-v2-ablations clean
+.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds rl-ablations rl-bench-v2-ablations paper-builds paper-figs paper-pdf paper-check paper clean
 
 setup:
 	uv sync
@@ -81,3 +81,14 @@ rl-ablations:
 rl-bench-v2-ablations:
 	uv run --group ml brickforge-bench run --suite all --generators greedy_v1 rl_v2_nostab rl_v2_nostab_nostop rl_v2_noconn rl_v2_noconn_nostop --budgets 50 100 200 --out docs/benchmarks/rl_v2_ablations
 	uv run --group ml brickforge-bench audit docs/benchmarks/rl_v2_ablations.jsonl
+
+# M7 paper: figures are scripted from docs/benchmarks/*.jsonl and the cached builds under paper/figures/builds/
+paper-builds:
+	uv run --group ml --group paper python paper/scripts/figs.py builds
+paper-figs:
+	uv run --group ml --group paper python paper/scripts/figs.py all
+paper-check:
+	uv run --group ml --group paper python paper/scripts/figs.py check
+paper-pdf:
+	cd paper && SOURCE_DATE_EPOCH=1700000000 tectonic --keep-logs --outdir build main.tex
+paper: paper-figs paper-pdf

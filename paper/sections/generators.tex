@@ -1,0 +1,99 @@
+\section{Three ways to choose the next brick}
+\label{sec:generators}
+
+\subsection{Greedy search (the baseline and the teacher)}
+The baseline builds layer by layer from the ground up. Within a layer it repeatedly scores every legal placement of
+every brick type and takes the best. The score puts \emph{hard} cells first: a target cell with nothing beneath it can
+only ever be covered by a brick that also overlaps the layer below, so the search covers those before they become
+unreachable. After hard cells it prefers placements that cover more new target cells, then fewer filler cells, then
+more support underneath; ties break on the number of distinct bricks below (to interlock), part cost and position.
+Three filler policies (none, at most a quarter, at most half) are run and the best validated IoU is kept. The whole
+search takes 0.07\,s per shape on average. Its output, ordered by the planner, is also the \emph{teacher} that the
+learned policy imitates.
+
+\subsection{The policy network}
+The learned generator is a candidate-scoring network (Figure~\ref{fig:policy}). Its input is the grid as three
+voxel channels (target, current assembly, remaining target), encoded by four 3D convolutions with 32 channels at
+full resolution (the grid is small enough that no pooling is needed). For each legal placement the encoder's features
+are averaged over the placement's footprint cells and concatenated with 13 hand-computed features (the brick type as
+a one-hot code, rotation, position, and the counts of new target, filler and supporting cells); a small MLP turns that
+into one logit. A separate head scores the \emph{stop} action from a global pool of the feature map. A softmax over
+all candidates plus stop gives the policy. Because only enumerated legal placements receive logits, legality is
+inherent at training and at inference. The policy has 97k parameters; RL adds a value head and two inputs described
+below, for 101k in total.
+
+\begin{figure}[t]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[
+    box/.style={draw=muted, fill=boxc, rounded corners=2pt, align=center, font=\small, inner sep=4pt, minimum height=8mm},
+    arr/.style={-{Stealth[length=2mm]}, muted, line width=0.7pt},
+    lab/.style={font=\scriptsize, text=muted, align=center}]
+    \node[box] (vox) at (0,0) {voxel grid, $16\times16\times8$\\3 channels (SFT) / 4 (RL)};
+    \node[box] (enc) at (4.0,0) {4\,$\times$ Conv3d(32) + GELU\\full resolution};
+    \node[box] (pool) at (8.0,0) {mean over the candidate's\\footprint cells};
+    \node[box] (mlp) at (11.6,0) {candidate MLP\\$64\!\to\!64\!\to\!1$};
+    \node[box] (soft) at (14.6,0) {softmax over\\$N$ candidates\\+ STOP};
+    \node[box] (feat) at (9.0,-2.0) {13 candidate features (+2 connectivity in RL):\\part one-hot, rotation, $x$, $y$, layer, new-target /\\filler / support counts; \emph{joins main}, \emph{merges two}};
+    \node[box] (glob) at (4.0,-2.0) {global mean + max\\of the feature map};
+    \node[box] (val) at (0.3,-2.0) {value head\\(RL only)};
+    \node[box] (stop) at (14.6,-2.0) {STOP head};
+    \draw[arr] (vox) -- (enc);
+    \draw[arr] (enc) -- (pool);
+    \draw[arr] (pool) -- (mlp);
+    \draw[arr] (feat) -- (mlp);
+    \draw[arr] (mlp) -- (soft);
+    \draw[arr] (enc) -- (glob);
+    \draw[arr] (glob) -- (val);
+    \draw[arr] (glob.south) -- ++(0,-1.1) -| (stop.south);
+    \draw[arr] (stop) -- (soft);
+  \end{tikzpicture}}
+  \caption{The candidate-scoring policy. Every legal placement is scored from pooled voxel features and a few
+  hand-computed counts; STOP is scored from a global pool. 97k parameters (101k with the RL value head and
+  connectivity inputs).}
+  \label{fig:policy}
+\end{figure}
+
+\subsection{Imitation (SFT)}
+\paragraph{Data.} Targets come from two sources. Ten procedural families (boxes, stacks, capped towers, bridges,
+polyominoes, ellipsoids, cylinders, stepped shapes, blobs, rows of arches), 200 instances each, grounded and
+face-connected. And a pool of Thingi10K meshes with every benchmark object excluded, voxelized by the production
+pipeline. The supervision for each target is the greedy search's validated build in planner order, ending with the
+stop action. We trained on two versions of this pool. \textbf{v1} kept 150 real meshes (at most 50k faces, and only
+those on which the teacher covered at least half the target), so training was 93\,\% procedural. \textbf{v2} kept
+every eligible mesh, 640 real meshes up to 200k faces, and draws half of each training batch from them. Examples
+are split 80/10/10 by object, with all symmetric copies and all files of one Thingiverse object in the same split.
+
+\paragraph{Training.} Teacher forcing with cross-entropy over candidates plus stop; AdamW at $10^{-3}$ with a cosine
+schedule, batch 32, 20{,}000 steps, 8-fold symmetry augmentation (rotations and reflections of the grid). Decisions
+are streamed by a background producer because materialising every augmented decision would need about 40\,GB.
+Checkpoints are selected by free-running decode IoU on a fixed validation subset, not by teacher-forced accuracy,
+because the latter hides compounding errors. One run takes 25 to 28 minutes on the laptop's GPU.
+
+\subsection{Reinforcement learning}
+Imitation reproduces the teacher's per-step choices but cannot see what only shows up in the finished build: whether
+the layers interlock into one component, or whether an early placement blocked a cell for good. RL scores the
+finished build directly.
+
+\paragraph{Environment.} An episode places bricks on one target with the same candidate set plus stop, under
+temperature-1 sampling. The state tracks a union-find over stud connections so the \emph{main} (largest grounded)
+component is known at every step, exactly as the trim will decide it. Two things are added to the observation: a
+fourth voxel channel marking the main component, and two per-candidate features, \emph{joins the main component} and
+\emph{merges two components}. The SFT weights are zero-padded into this layout, so the initial RL policy produces the
+SFT policy's logits exactly. The terminal reward is computed after the shared finalize step:
+\[
+  r \;=\; \iou_{\text{after trim}} \;+\; 0.1\cdot[\text{stable under the model}],
+\]
+with no per-step shaping. Validity cannot fail under the candidate rules, so no penalty is needed.
+
+\paragraph{Algorithm.} PPO~\citep{schulman2017ppo} with a value head on the same encoder; advantage is reward minus
+value (terminal reward only), normalised per batch; clip 0.2, entropy bonus 0.01, a KL penalty of 0.05 towards the
+frozen initial policy, Adam at $10^{-4}$, gradient clipping 1.0. Masked actions are removed from the entropy and KL
+terms before any multiplication; leaving them in poisons the backward pass with NaNs. Each iteration samples 128
+episodes in 8 forked CPU workers and runs 3 epochs of updates on the GPU; 250 iterations take 1.6 to 2.4 hours. The
+best checkpoint is chosen by greedy-decode IoU on a fixed 64-example validation subset that mirrors the training mix
+(half real meshes in v2).
+
+\paragraph{Decode rule.} At inference the policy decodes greedily (argmax). The stop action can be used as learned,
+or \emph{masked}, in which case decoding continues until no legal placement remains or the cap is reached, exactly as
+the greedy search stops. Section~\ref{sec:benchmark} describes how this choice was made.

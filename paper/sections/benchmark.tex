@@ -1,0 +1,30 @@
+\section{Benchmark and protocol}
+\label{sec:benchmark}
+
+\paragraph{The suite.} \nCases{} cases were frozen before any learned generator existed. Thirteen are procedural
+fixtures with known expected behaviour: simple solids (cube, slab, tower, L and T shapes, wedge), overhangs (pyramid,
+sphere), a budget-limited cylinder, a bridge, and three adversarial inputs (a flat sheet that cannot be covered, a
+one-cell pole that admits no valid build, and a non-watertight mesh that must be rejected). Forty are Thingi10K
+meshes~\citep{zhou2016thingi10k}, drawn deterministically from the models that are Creative Commons licensed and are
+closed, manifold, single-component solids with 100 to 200k faces, one file per Thingiverse object. The 40 meshes
+are the held-out set: every Thingiverse object in the benchmark is excluded from every training pool, and the
+procedural fixtures are hand-made shapes distinct from the ten training families. Licence, author and source link are
+recorded per mesh.
+
+\paragraph{Records and audit.} Every (case, generator, budget) triple produces one record with status, fidelity,
+coverage, piece count, validity, planning outcome, stability verdict, per-stage seconds, hardware and git commit.
+An \emph{audit} command regenerates every non-failed record from scratch, validates it with the independent
+validator, recomputes IoU from occupancy and compares status, pieces, validity and IoU with what the file claims. Every
+benchmark file in this paper passed its audit, and the greedy rows are byte-identical to the frozen baseline file in
+every run. The audit earned its keep once: it exposed that one mesh voxelized to 288, 289 or 290 cells depending on
+the process, because the containment test re-checks ambiguous cell centres with a ray direction drawn from the global
+random generator. Voxelization now runs that test under a fixed, restored random state.
+
+\paragraph{Budgets, seeds, cost.} Every generator runs at budgets of 50, 100 and 200 pieces. Decode is deterministic
+(greedy), so the benchmark seed only matters for provenance; \emph{training} seeds are reported separately
+(Section~\ref{sec:seeds}). Decode time is recorded per case on the same machine for every generator.
+
+\paragraph{Decisions were made off the benchmark.} The one decode choice for the learned generators, whether to use
+the learned stop or to mask it, was made on the SFT \emph{test split} (260 held-out training-distribution examples,
+188 procedural and 72 real), before any benchmark run of the affected checkpoint, and is reported in full in
+Section~\ref{sec:stop}. The benchmark was never used to select a checkpoint, a decode rule or a hyperparameter.

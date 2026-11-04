@@ -1,0 +1,83 @@
+\section{Problem setup and the shared pipeline}
+\label{sec:setup}
+
+\paragraph{Grid and bricks.} A brick model lives on an integer grid. The horizontal unit is one \emph{stud}
+(8\,mm pitch); the vertical unit is one \emph{plate} (3.2\,mm), and a standard brick is three plates tall. We use a
+16\,$\times$\,16 stud footprint and 8 brick layers, which is 2048 cells of one stud by one stud by one brick. The
+catalogue has six upright bricks: 1\,$\times$\,1, 1\,$\times$\,2, 1\,$\times$\,3, 1\,$\times$\,4, 2\,$\times$\,2 and
+2\,$\times$\,4, placed at 0\textdegree{} or 90\textdegree. A \emph{placement} is a brick type, rotation and
+position; a \emph{build} is a list of placements plus an ordered list of assembly steps.
+
+\paragraph{Target.} The input is a watertight mesh. It is rotated so its chosen axis points up, scaled uniformly to fit
+the physical box the grid represents, floored, and voxelized by testing whether each cell centre lies inside the
+mesh. The result is a boolean \emph{target} grid $T$. (Procedural targets are generated directly on the grid.)
+
+\paragraph{Legality.} A placement is legal when it lies inside the grid, overlaps no placed brick, is \emph{supported}
+(it sits on the ground or at least one cell directly beneath it is already filled), covers at least one target cell,
+and is at most half \emph{filler}, cells outside the target. These rules are enforced by a candidate enumerator that
+every generator in this paper shares, so no generator can place an illegal brick.
+
+\paragraph{The finalize step.} Every generator returns a raw list of placements, and every list goes through the
+same four stages (Figure~\ref{fig:pipeline}):
+\begin{enumerate}
+  \item \textbf{Trim.} Bricks connect only through studs: an upper brick is attached to a lower one when it rests
+  directly on it with overlapping footprints. Side contact does not count. The build is reduced to its largest
+  component connected to the ground; everything else is discarded. This is what makes the output one object.
+  \item \textbf{Plan.} A planner orders the remaining bricks one per step, each inserted straight down, attached to
+  what is already there, with a clear insertion path and never sealing an unplaced brick beneath it. For this
+  catalogue of same-height upright bricks that greedy planner is complete: every valid build gets an order.
+  \item \textbf{Validate.} An independent validator replays the steps and checks bounds, collisions, support, the
+  single-component property and the piece budget. A build that fails here is reported as invalid.
+  \item \textbf{Stability check.} A static force model in the style of StableLego~\citep{liu2024stablelego}: bricks
+  are rigid, loaded by their own weight; each shared stud cell carries vertical force at four points; compression is
+  unbounded and tension is capped by a clutch capacity of 0.98\,N per stud cell, divided over its four points. The
+  constant is StableLego's measured value, which that work applies per contact point rather than per stud, so our
+  limit is roughly four times more conservative than theirs. A linear program
+  finds the smallest tension utilisation that balances every brick. Utilisation at most one is \emph{stable under the
+  model}. The model ignores lateral loads, friction and deformation, so throughout this paper ``stable'' means
+  \stablenote.
+\end{enumerate}
+
+\begin{figure}[t]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[
+    box/.style={draw=muted, fill=boxc, rounded corners=2pt, align=center, font=\small, minimum height=9mm, inner sep=4pt},
+    gen/.style={box, draw=rlc, line width=0.9pt},
+    arr/.style={-{Stealth[length=2mm]}, muted, line width=0.7pt},
+    lab/.style={font=\scriptsize, text=muted, align=center}]
+    \node[box] (mesh) at (0,0) {mesh or\\procedural shape};
+    \node[box] (vox) at (3.1,0) {voxelize\\$16\times16\times8$};
+    \node[gen] (gen) at (6.6,0) {\textbf{generator}\\greedy search / SFT policy /\\RL policy};
+    \node[box] (trim) at (10.4,0) {trim to largest\\ground-connected\\component};
+    \node[box] (plan) at (13.4,0) {plan\\assembly order};
+    \node[box] (val) at (13.4,-2.6) {validate: bounds, collisions,\\support, one component, budget};
+    \node[box] (stab) at (8.6,-2.6) {stability LP\\(simplified static force model)};
+    \node[box, draw=greedyc] (out) at (3.4,-2.6) {build + parts list\\+ checked steps + metrics};
+    \draw[arr] (mesh) -- (vox);
+    \draw[arr] (vox) -- (gen);
+    \draw[arr] (gen) -- (trim);
+    \draw[arr] (trim) -- (plan);
+    \draw[arr] (plan) -- (val);
+    \draw[arr] (val) -- (stab);
+    \draw[arr] (stab) -- (out);
+    \node[lab, above=1mm of gen] {the only part that differs between arms};
+    \node[lab, above=1mm of trim, xshift=1.5cm] {shared by every arm};
+    \node[lab, below=1mm of gen, text=rlc] {chooses only among legal candidates: inside the grid,\\no overlap, supported, $\geq 1$ target cell, $\leq$ half filler};
+  \end{tikzpicture}}
+  \caption{The shared pipeline. Generators differ only in how they choose the next brick; the trim, planner,
+  validator and stability check are identical, so fidelity differences cannot come from different rules.}
+  \label{fig:pipeline}
+\end{figure}
+
+\paragraph{Metrics.} \emph{Fidelity} is the intersection-over-union between the occupancy of the trimmed build $B$ and
+the target, $\iou = |B \cap T| / |B \cup T|$, so both missing and extraneous cells count. \emph{Validity} is the
+validator's verdict, \emph{stability} the force model's, \emph{pieces} the brick count after the trim, and
+\emph{decode time} the wall-clock seconds the generator took. The \emph{piece budget} is a hard cap on placements;
+a generator may stop earlier.
+
+\paragraph{Fidelity convention.} Throughout, a reported mean IoU is the mean over the \nAttempted{} benchmark cases
+that are attemptable (one fixture is a deliberately non-watertight mesh that every generator must reject), with a
+build that is missing or fails validation scored 0. A generator therefore cannot raise its mean by failing on hard
+cases. The benchmark's own summariser averages over valid builds only, which reads higher for generators with
+failures; we never use that number for comparisons.

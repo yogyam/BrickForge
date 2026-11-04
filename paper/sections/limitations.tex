@@ -1,0 +1,36 @@
+\section{Negative results and limitations}
+\label{sec:limitations}
+
+We state these as findings rather than caveats, because each one changes what the headline means.
+
+\begin{itemize}
+  \item \textbf{Learned stopping is unsolved.} After imitation, after RL on a half-real-mesh episode mix, and in
+  both ablations, the policy's own stop action ends some real-mesh builds at zero pieces. The reported numbers use a
+  masked stop and thereby borrow the search's stopping rule. A policy that knows when it is done remains future work.
+  \item \textbf{The stability bonus did nothing.} Stability under the model is produced by the legality rules and the
+  trim; the reward term is redundant here. We did not test harder settings (plates, overhanging parts, larger
+  grids) where it might matter.
+  \item \textbf{The connectivity features' benefit is only visible off the benchmark mean.} Their effect is clear in the
+  policy's own stopping, on the larger held-out split and head to head, but a reader who looks only at
+  Table~\ref{tab:ablations}'s mean would conclude they are useless. Fifty-two cases are too few to resolve a 0.02
+  effect when one case can move by 0.3.
+  \item \textbf{Stability is a model, not a test.} The force model uses a literature clutch constant, ignores lateral
+  loads, friction and deformation, and no build was assembled physically. Every ``stable'' in this paper means
+  \stablenote.
+  \item \textbf{The learned policies are distilled from the search.} ``Learned versus hand-engineered'' is really
+  learned-from-hand-engineered: the imitation targets are the search's builds, and RL starts from that policy with a
+  KL penalty towards it. The policy did not discover a different style of building; it got better at the search's.
+  \item \textbf{Small benchmark, few seeds.} Fifty-two attempted cases, two training seeds for the v2 ladder, one
+  seed for the v1 arms and the ablations, one decode seed (decoding is deterministic). Differences below about 0.02
+  should be read as observed, not established. We report ranges, not confidence intervals.
+  \item \textbf{A small world.} One grid (16\,$\times$\,16\,$\times$\,8), solid fill, six upright bricks, one colour, no
+  plates or slopes, no inventory constraints. Thin objects occupy 20 to 90 of 2048 cells and fragment at this
+  resolution; grid resolution is the main lever and was not varied.
+  \item \textbf{Three budget points, and the largest rarely binds.} The budget study has three points, and at 200 the
+  cap is almost never the stopping reason. A finer sweep below 100 pieces would say more about the trade-off.
+  \item \textbf{Comparable, not equal, decode cost.} The policy takes about twice the search's time per shape, both
+  under 0.2\,s. Best-of-8 sampling from the SFT policy nearly matches RL at about seven times the cost, so RL's
+  advantage is cost, not a higher ceiling.
+  \item \textbf{Thingi10K has no semantic categories.} The 40 meshes are a deterministic draw from the licensed,
+  watertight subset, not a curated set of recognisable objects, and one benchmark is not a general claim.
+\end{itemize}

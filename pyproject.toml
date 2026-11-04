@@ -25,6 +25,9 @@ mcp = [
 ml = [
     "torch>=2.6,<3",
 ]
+paper = [
+    "matplotlib>=3.9,<4",
+]
 
 [build-system]
 requires = ["hatchling"]

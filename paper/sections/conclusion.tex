@@ -1,0 +1,11 @@
+\section{Conclusion}
+
+Inside one fixed pipeline of legality rules, a connected-component trim, an assembly planner, a validator and a
+simplified stability model, a 100k-parameter candidate-scoring policy trained for under five hours on a laptop builds
+brick models within 0.012 mean IoU of a hand-engineered search at comparable decode cost, with identical validity and
+model-stability counts, reproduced across two training seeds. Fidelity saturates between 100 and 200 pieces for
+every generator because the cap rarely binds. Reinforcement learning on the fidelity of the finished build supplied
+most of the gain beyond imitation, and rebalancing the data towards real meshes supplied the rest; the stability
+reward supplied nothing, because the hard constraints already enforce it. The policy's own stop action remains the
+open problem, and thin-walled shells remain the search's. The benchmark, its audit, the training recipes and the
+figure scripts are released so that every number here can be regenerated.

@@ -1,0 +1,61 @@
+% BrickForge paper. Build: `make paper` (figures via paper/scripts/figs.py, PDF via tectonic).
+\documentclass[10pt]{article}
+\usepackage[margin=0.95in]{geometry}
+\usepackage{newtxtext,newtxmath}  % newtxmath supplies the AMS symbols; amssymb would clash on \Bbbk
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{microtype}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+\input{figures/numbers}
+\captionsetup{font=small,labelfont=bf}
+\setlist{nosep,leftmargin=*}
+\sisetup{detect-all}
+
+\definecolor{greedyc}{HTML}{2a78d6}
+\definecolor{sftc}{HTML}{eb6834}
+\definecolor{rlc}{HTML}{1baf7a}
+\definecolor{boxc}{HTML}{f4f4f1}
+\definecolor{muted}{HTML}{52514e}
+
+\newcommand{\iou}{\mathrm{IoU}}
+\newcommand{\stablenote}{stable under the simplified static force model; not physically tested}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{BrickForge: Learning to Build Brick Models Under a Piece Budget}}
+\author{Yogya Mehrotra\\ \small Independent researcher \\ \small \texttt{yogyamehrotra@gmail.com}}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\input{sections/intro}
+\input{sections/setup}
+\input{sections/generators}
+\input{sections/benchmark}
+\input{sections/results}
+\input{sections/limitations}
+\input{sections/related}
+\input{sections/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\appendix
+\input{sections/appendix}
+
+\end{document}
