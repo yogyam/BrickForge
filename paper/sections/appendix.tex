@@ -74,7 +74,8 @@ are imposed. A linear program finds the smallest tension utilisation $t$ such th
 $[-t\,T/4,\,+\infty)$ with $T = 0.98$\,N per stud cell. StableLego~\citep{liu2024stablelego} measured 0.98\,N as the
 capacity of one contact point (three to four per stud), so dividing it over four points per stud makes this model
 about four times more conservative than theirs; we keep the conservative reading because no capacity was measured in
-this project.
+this project. StableLego also moves the equilibrium residuals into the objective so that every structure is
+solvable, whereas this program keeps equilibrium as a hard constraint and reports infeasibility as a topple.
 $t \le 1$ is reported as stable under the model; an infeasible program even with unlimited tension means the centre
 of mass has left the support (topple). The model has no lateral loads, shear, friction, deformation, hand forces or
 dynamics, and its constants were not measured on any physical brick in this project. One program takes about 20\,ms

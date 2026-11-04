@@ -20,6 +20,7 @@ paper/build/
 paper/*.pdf
 # literature-search scratch notes (the report is committed under paper/)
 research_notes/
+reports/
 *.aux
 *.log
 *.out

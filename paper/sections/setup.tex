@@ -28,7 +28,7 @@ same four stages (Figure~\ref{fig:pipeline}):
   catalogue of same-height upright bricks that greedy planner is complete: every valid build gets an order.
   \item \textbf{Validate.} An independent validator replays the steps and checks bounds, collisions, support, the
   single-component property and the piece budget. A build that fails here is reported as invalid.
-  \item \textbf{Stability check.} A static force model in the style of StableLego~\citep{liu2024stablelego}: bricks
+  \item \textbf{Stability check.} A linear simplification of the StableLego force model~\citep{liu2024stablelego}: bricks
   are rigid, loaded by their own weight; each shared stud cell carries vertical force at four points; compression is
   unbounded and tension is capped by a clutch capacity of 0.98\,N per stud cell, divided over its four points. The
   constant is StableLego's measured value, which that work applies per contact point rather than per stud, so our

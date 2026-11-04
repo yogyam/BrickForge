@@ -4,7 +4,7 @@ Converts a 3D mesh into a LEGO-compatible brick build, a parts list, and checked
 Research goal: compare a deterministic baseline, a supervised model, and RL under identical geometry and
 evaluation rules, across piece budgets and a structural stability model. See `BrickForge_PRD_Design_Doc.md`.
 
-**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked; learned pipeline within 0.012 IoU of the search baseline at equal cost, reproduced by a second training seed, two ablations run); photo input and the paper next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
+**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked; learned pipeline within 0.012 IoU of the search baseline at equal cost, reproduced by a second training seed, two ablations run; M7 paper draft in `paper/`, `make paper`); photo input next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
 mesh normalization, voxelizer, greedy baseline, authoritative validator, assembly planner with insertion-path
 checks and replay validation, static force-model stability analysis, BOM/LDraw export, and a static viewer.
 Learned generators run through the same validator and planner as the baseline. No server. Nothing here is physically tested: every label reads

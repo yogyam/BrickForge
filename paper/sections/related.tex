@@ -1,9 +1,69 @@
 \section{Related work}
 \label{sec:related}
 
-% Placeholder until the literature search report is in; see paper/related_work_report.md.
-Brick-model generation from 3D shapes has been studied as an optimisation problem and, more recently, as a learning
-problem; stability of brick assemblies has its own line of work, from which our force model is taken
-\citep{liu2024stablelego}; and the training recipe we use, imitation followed by PPO fine-tuning with a KL penalty
-towards the initial policy, follows a pattern established elsewhere \citep{schulman2017ppo}. A full survey of these
-three lines, with the works this paper builds on, is given here once the literature pass is complete.
+\paragraph{Legolization by optimisation.} Turning a shape into a brick layout has been posed as a layout
+optimisation problem for over a decade: graph-connectivity heuristics that find and repair weak points
+\citep{testuz2013constructable}, force-based stability with layout refinement \citep{luo2015legolization},
+maximum-flow stability bounds \citep{wassmann2012maxflow}, genetic algorithms over brick layouts
+\citep{lee2015galayout,lee2018smga}, automatic assembly manuals \citep{ono2013legobuilder}, and extensions to
+Technic structures \citep{xu2019technic}. Our greedy search inherits this line's objectives (cover the target,
+interlock layers, use few pieces) in a deliberately simple form. It is a frozen baseline and a teacher, not a
+contribution.
+
+\paragraph{Learned brick generation.} Sequential assembly was first learned with Bayesian optimisation
+\citep{kim2020combinatorial} and then with reinforcement learning: Brick-by-Brick \citep{chung2021brickbybrick}
+trains a PPO policy with a learned validity mask and a per-step IoU reward, ending each episode when a per-task
+brick budget is spent, with no stop action. BrECS \citep{ahn2024brecs} replaces RL with a 3D-convolutional
+placement scorer behind a constraint filter, trained from a procedural teacher under explicit per-type brick
+budgets, and reports that this beats the RL and generative baselines; it is the closest relative of our SFT arm.
+Image- and text-conditioned generators have since adopted a stability oracle: BrickGPT \citep{pun2025brickgpt}
+uses StableLego for rejection sampling and rollback, a rollback-free successor trains with physics rewards after
+SFT and reports that the RL stage also cuts brick counts \citep{xu2026stable}, and BrickAnything
+\citep{ni2026brickanything}, BrickNet \citep{kulits2026bricknet}, LEGO-Maker \citep{ge2025legomaker},
+Image2Lego \citep{lennon2021image2lego} and ResemBrick \citep{chen2026resembrick} cover geometry, graph, image and
+photograph inputs. In the works we could verify, the budgeted learners carry no physics and the physics-aware
+generators carry no budget; we found none that combines an explicit piece budget with a force-based stability
+check in a learned policy, which is the gap this paper's setup sits in. Recent generators work on
+20\,$\times$\,20\,$\times$\,20 grids with eight brick types; our 16\,$\times$\,16\,$\times$\,8 grid and six bricks
+are smaller than every setting we found.
+
+\paragraph{Stability and assembly planning.} Our force model is a linear simplification of StableLego
+\citep{liu2024stablelego}, which descends from the per-brick equilibrium of \citet{luo2015legolization}. StableLego
+caps the friction force at 0.98\,N \emph{per contact point}, places the equilibrium residuals in the objective so
+every structure is solvable, and reports 99.6\,\% agreement with 225 physically built samples; it also reports
+that a hard-constrained equilibrium formulation was solvable on only 58\,\% of those samples. Our program keeps
+hard equilibrium constraints and divides 0.98\,N over the four points of each stud cell, so it is more conservative
+on both counts, and an infeasible program is reported as a topple. BrickSim \citep{wen2026bricksim} and BrickFEM
+\citep{pletz2023brickfem} are the higher-fidelity alternatives. For assembly order, \citet{liu2025physicsawareasp}
+train a PPO planner behind a data-free action mask that includes a per-step StableLego check and reach 100\,\%
+physical success where a connectivity-only mask reaches 30 to 93\,\%. Our planner is rule-based and complete for
+upright same-height bricks (Appendix~\ref{app:planner}); stability is checked on the final build, with a per-step
+option that the benchmark does not use.
+
+\paragraph{Imitation, then reinforcement learning.} Behaviour cloning \citep{pomerleau1989alvinn} and its
+compounding-error analysis \citep{ross2011dagger} underlie the SFT stage; learning a policy from a search procedure's
+own choices is the AlphaGo recipe \citep{silver2016alphago,silver2017alphagozero,anthony2017exit}. Fine-tuning
+with PPO \citep{schulman2017ppo} under a KL penalty towards the initial policy follows \citet{ziegler2019finetuning}
+and \citet{ouyang2022instructgpt}; the KL term is what prevents forgetting in VPT \citep{baker2022vpt}, and
+PIRLNav \citep{ramrakhya2023pirlnav} reports that the gain from RL fine-tuning shrinks as the imitation data grows,
+consistent with our +0.02 to +0.04. \citet{rudner2021klpathologies} describe pathologies of KL-regularised RL with
+parametric references. Legal-action masking as a differentiable logit transform is analysed by
+\citet{huang2022invalidmasking}; our candidate enumeration makes masking structural rather than a transform on a
+fixed action space, as in the object-centric policies of \citet{bapst2019structuredagents} and
+\citet{ghasemipour2022blocksassemble}. None of the construction policies above learns a stop action: episodes end
+on a budget, a success test or a step cap. The nearest analyses of learned termination come from elsewhere:
+option termination collapses without a deliberation cost \citep{harb2017deliberationcost}, navigation agents fail
+to stop unless stopping has its own head \citep{xiang2020learningtostop}, and budget-induced terminations should not
+be treated as true terminal states \citep{pardo2018timelimits}. We found no prior study of a stop action that is
+trained but masked at inference.
+
+\paragraph{Evaluation.} Thingi10K \citep{zhou2016thingi10k} supplies our real meshes; we found no brick-generation
+paper that uses it (the field evaluates on ModelNet and ShapeNet derivatives). Occupancy is computed by parity
+testing \citep{nooruddin2003voxelization}; volumetric IoU follows the reconstruction literature
+\citep{choy2016r2n2,mescheder2019occnet}, whose critics note that IoU rewards coarse agreement
+\citep{tatarchenko2019whatdonetworkslearn}. Scoring a failed build as zero is stricter than reporting over valid
+structures only, as BrickGPT does. Best-of-$N$ sampling as a test-time-compute baseline follows
+\citet{cobbe2021verifiers}, \citet{brown2024monkeys} and \citet{snell2024testtimecompute}. On seeds, every guideline we
+know asks for more than two \citep{henderson2018drlmatters,colas2018howmanyseeds,agarwal2021precipice}; we therefore
+report ranges and make no significance claims, and follow the reproducibility checklist of \citet{pineau2021reproducibility}
+in releasing the records and the audit.

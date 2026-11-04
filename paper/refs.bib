@@ -1,21 +1,379 @@
-@article{liu2024stablelego,
-  title   = {{StableLego}: Stability Analysis of Block Stacking Assembly},
-  author  = {Liu, Ruixuan and Deng, Kangle and Wang, Ziwei and Liu, Changliu},
-  journal = {IEEE Robotics and Automation Letters},
-  year    = {2024},
-  note    = {arXiv:2402.10711}
+% Every entry's identifier was verified during the literature pass (paper/related_work_report.md, "Citation register").
+
+% ---- legolization by optimisation and heuristics ----------------------------------------------------------------
+@inproceedings{testuz2013constructable,
+  author    = {Testuz, Romain and Schwartzburg, Yuliy and Pauly, Mark},
+  title     = {Automatic Generation of Constructable Brick Sculptures},
+  booktitle = {Eurographics 2013 -- Short Papers},
+  pages     = {81--84},
+  year      = {2013},
+  doi       = {10.2312/conf/EG2013/short/081-084}
+}
+@article{luo2015legolization,
+  author  = {Luo, Sheng-Jie and Yue, Yonghao and Huang, Chun-Kai and Chung, Yu-Huan and Imai, Sei and Nishita, Tomoyuki and Chen, Bing-Yu},
+  title   = {Legolization: Optimizing {LEGO} Designs},
+  journal = {ACM Transactions on Graphics},
+  volume  = {34},
+  number  = {6},
+  pages   = {222:1--222:12},
+  year    = {2015},
+  doi     = {10.1145/2816795.2818091}
+}
+@inproceedings{wassmann2012maxflow,
+  author    = {Wa{\ss}mann, Martin and Weicker, Karsten},
+  title     = {Maximum Flow Networks for Stability Analysis of {LEGO} Structures},
+  booktitle = {Algorithms -- ESA 2012},
+  series    = {LNCS},
+  volume    = {7501},
+  pages     = {813--824},
+  year      = {2012},
+  doi       = {10.1007/978-3-642-33090-2_70}
+}
+@article{ono2013legobuilder,
+  author  = {Ono, Sumiaki and Andr{\'e}, Alexis and Chang, Youngha and Nakajima, Masayuki},
+  title   = {{LEGO} Builder: Automatic Generation of {LEGO} Assembly Manual from {3D} Polygon Model},
+  journal = {ITE Transactions on Media Technology and Applications},
+  volume  = {1},
+  number  = {4},
+  pages   = {354--360},
+  year    = {2013},
+  doi     = {10.3169/mta.1.354}
+}
+@inproceedings{lee2015galayout,
+  author    = {Lee, Sangyeop and Kim, Jinhyun and Kim, Jae Woo and Moon, Byung-Ro},
+  title     = {Finding an Optimal {LEGO} Brick Layout of Voxelized {3D} Object Using a Genetic Algorithm},
+  booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference (GECCO)},
+  year      = {2015},
+  doi       = {10.1145/2739480.2754667}
+}
+@article{lee2018smga,
+  author  = {Lee, Seung-Mok and Kim, Jae Woo and Myung, Hyun},
+  title   = {Split-and-Merge-Based Genetic Algorithm ({SM-GA}) for {LEGO} Brick Sculpture Optimization},
+  journal = {IEEE Access},
+  volume  = {6},
+  pages   = {40429--40438},
+  year    = {2018},
+  doi     = {10.1109/ACCESS.2018.2859039}
+}
+@article{xu2019technic,
+  author  = {Xu, Hao and Hui, Ka-Hei and Fu, Chi-Wing and Zhang, Hao},
+  title   = {Computational {LEGO} Technic Design},
+  journal = {ACM Transactions on Graphics},
+  volume  = {38},
+  number  = {6},
+  pages   = {196:1--196:15},
+  year    = {2019},
+  doi     = {10.1145/3355089.3356504}
 }
 
+% ---- learned brick generation -----------------------------------------------------------------------------------
+@inproceedings{kim2020combinatorial,
+  author    = {Kim, Jungtaek and Chung, Hyunsoo and Lee, Jinhwi and Cho, Minsu and Park, Jaesik},
+  title     = {Combinatorial {3D} Shape Generation via Sequential Assembly},
+  booktitle = {NeurIPS 2020 Workshop on Machine Learning for Engineering Modeling, Simulation, and Design},
+  year      = {2020},
+  note      = {arXiv:2004.07414}
+}
+@article{lennon2021image2lego,
+  author  = {Lennon, Kyle and Fransen, Katharina and O'Brien, Alexander and Cao, Yumeng and Beveridge, Matthew and Arefeen, Yamin and Singh, Nikhil and Drori, Iddo},
+  title   = {{Image2Lego}: Customized {LEGO} Set Generation from Images},
+  journal = {arXiv preprint arXiv:2108.08477},
+  year    = {2021}
+}
+@inproceedings{chung2021brickbybrick,
+  author    = {Chung, Hyunsoo and Kim, Jungtaek and Knyazev, Boris and Lee, Jinhwi and Taylor, Graham W. and Park, Jaesik and Cho, Minsu},
+  title     = {Brick-by-Brick: Combinatorial Construction with Deep Reinforcement Learning},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+  note      = {arXiv:2110.15481}
+}
+@article{ahn2024brecs,
+  author  = {Ahn, Seokjun and Kim, Jungtaek and Cho, Minsu and Park, Jaesik},
+  title   = {Budget-Aware Sequential Brick Assembly with Efficient Constraint Satisfaction},
+  journal = {Transactions on Machine Learning Research},
+  year    = {2024},
+  note    = {arXiv:2210.01021}
+}
+@inproceedings{pun2025brickgpt,
+  author    = {Pun, Ava and Deng, Kangle and Liu, Ruixuan and Ramanan, Deva and Liu, Changliu and Zhu, Jun-Yan},
+  title     = {Generating Physically Stable and Buildable Brick Structures from Text},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {14798--14809},
+  year      = {2025},
+  note      = {arXiv:2505.05469}
+}
+@article{ge2025legomaker,
+  author  = {Ge, Jiahao and Zhou, Mingjun and Zheng, Hanyou and Xu, Hao and Fu, Chi-Wing},
+  title   = {{LEGO}-Maker: Autoregressive Image-Conditioned {LEGO} Model Creation},
+  journal = {ACM Transactions on Graphics},
+  volume  = {44},
+  number  = {6},
+  year    = {2025},
+  doi     = {10.1145/3763285}
+}
+@inproceedings{kulits2026bricknet,
+  author    = {Kulits, Peter and Schmid, Cordelia},
+  title     = {{BrickNet}: Graph-Backed Generative Brick Assembly},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2026},
+  note      = {arXiv:2604.22984}
+}
+@article{xu2026stable,
+  author  = {Xu, Chenhui and Bai, Ziyue and Yu, Fuxun and Huang, Heng and Xiong, Jinjun},
+  title   = {Rollback-Free Stable Brick Structures Generation},
+  journal = {arXiv preprint arXiv:2605.06947},
+  year    = {2026}
+}
+@article{ni2026brickanything,
+  author  = {Ni, Zhengyang and Yan, Feng and Guo, Yu and Wang, Fei},
+  title   = {{BrickAnything}: Geometry-Conditioned Buildable Brick Generation with Structure-Aware Tokenization},
+  journal = {arXiv preprint arXiv:2605.26182},
+  year    = {2026}
+}
+@article{chen2026resembrick,
+  author  = {Chen, Xilun and Wan, Hanwen and Zhao, Yusong and Lin, Zexin and Liao, Ruixiang and Ji, Xiaoqiang},
+  title   = {{ResemBrick}: Brick Reconstruction from Photographs with Perceptual Fidelity and Buildability},
+  journal = {arXiv preprint arXiv:2608.09597},
+  year    = {2026}
+}
+
+% ---- stability models and assembly-sequence planning -------------------------------------------------------------
+@article{liu2024stablelego,
+  author  = {Liu, Ruixuan and Deng, Kangle and Wang, Ziwei and Liu, Changliu},
+  title   = {{StableLego}: Stability Analysis of Block Stacking Assembly},
+  journal = {IEEE Robotics and Automation Letters},
+  volume  = {9},
+  number  = {11},
+  pages   = {9383--9390},
+  year    = {2024},
+  doi     = {10.1109/LRA.2024.3414281},
+  note    = {arXiv:2402.10711}
+}
+@article{liu2025physicsawareasp,
+  author  = {Liu, Ruixuan and Chen, Alan and Zhao, Weiye and Liu, Changliu},
+  title   = {Physics-Aware Combinatorial Assembly Sequence Planning using Data-free Action Masking},
+  journal = {IEEE Robotics and Automation Letters},
+  volume  = {10},
+  number  = {5},
+  pages   = {4882--4889},
+  year    = {2025},
+  doi     = {10.1109/LRA.2025.3555074},
+  note    = {arXiv:2408.10162}
+}
+@article{wen2026bricksim,
+  author  = {Wen, Haowei and Liu, Ruixuan and Piao, Weiyi and Li, Siyu and Liu, Changliu},
+  title   = {{BrickSim}: A Physics-Based Simulator for Manipulating Interlocking Brick Assemblies},
+  journal = {arXiv preprint arXiv:2603.16853},
+  year    = {2026}
+}
+@misc{pletz2023brickfem,
+  author = {Pletz, Martin and Drvoderic, Matthias},
+  title  = {{BrickFEM}: An Automated Finite Element Model for Static and Dynamic Simulations of Simple {Lego} Sets},
+  howpublished = {engrXiv preprint},
+  year   = {2023},
+  doi    = {10.31224/2898}
+}
+
+% ---- imitation, RL, masking, termination --------------------------------------------------------------------------
+@inproceedings{pomerleau1989alvinn,
+  author    = {Pomerleau, Dean A.},
+  title     = {{ALVINN}: An Autonomous Land Vehicle in a Neural Network},
+  booktitle = {Advances in Neural Information Processing Systems 1},
+  year      = {1989}
+}
+@inproceedings{ross2011dagger,
+  author    = {Ross, St{\'e}phane and Gordon, Geoffrey J. and Bagnell, J. Andrew},
+  title     = {A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning},
+  booktitle = {Proceedings of the 14th International Conference on Artificial Intelligence and Statistics (AISTATS)},
+  year      = {2011},
+  note      = {arXiv:1011.0686}
+}
+@article{silver2016alphago,
+  author  = {Silver, David and Huang, Aja and Maddison, Chris J. and Guez, Arthur and Sifre, Laurent and van den Driessche, George and Schrittwieser, Julian and Antonoglou, Ioannis and Panneershelvam, Veda and Lanctot, Marc and Dieleman, Sander and Grewe, Dominik and Nham, John and Kalchbrenner, Nal and Sutskever, Ilya and Lillicrap, Timothy and Leach, Madeleine and Kavukcuoglu, Koray and Graepel, Thore and Hassabis, Demis},
+  title   = {Mastering the game of {Go} with deep neural networks and tree search},
+  journal = {Nature},
+  volume  = {529},
+  number  = {7587},
+  pages   = {484--489},
+  year    = {2016},
+  doi     = {10.1038/nature16961}
+}
+@article{silver2017alphagozero,
+  author  = {Silver, David and Schrittwieser, Julian and Simonyan, Karen and Antonoglou, Ioannis and Huang, Aja and Guez, Arthur and Hubert, Thomas and Baker, Lucas and Lai, Matthew and Bolton, Adrian and Chen, Yutian and Lillicrap, Timothy and Hui, Fan and Sifre, Laurent and van den Driessche, George and Graepel, Thore and Hassabis, Demis},
+  title   = {Mastering the game of {Go} without human knowledge},
+  journal = {Nature},
+  volume  = {550},
+  number  = {7676},
+  pages   = {354--359},
+  year    = {2017},
+  doi     = {10.1038/nature24270}
+}
+@article{anthony2017exit,
+  author  = {Anthony, Thomas and Tian, Zheng and Barber, David},
+  title   = {Thinking Fast and Slow with Deep Learning and Tree Search},
+  journal = {arXiv preprint arXiv:1705.08439},
+  year    = {2017}
+}
 @article{schulman2017ppo,
-  title   = {Proximal Policy Optimization Algorithms},
   author  = {Schulman, John and Wolski, Filip and Dhariwal, Prafulla and Radford, Alec and Klimov, Oleg},
+  title   = {Proximal Policy Optimization Algorithms},
   journal = {arXiv preprint arXiv:1707.06347},
   year    = {2017}
 }
+@inproceedings{huang2022invalidmasking,
+  author    = {Huang, Shengyi and Onta{\~n}{\'o}n, Santiago},
+  title     = {A Closer Look at Invalid Action Masking in Policy Gradient Algorithms},
+  booktitle = {Proceedings of the International FLAIRS Conference},
+  volume    = {35},
+  year      = {2022},
+  note      = {arXiv:2006.14171}
+}
+@inproceedings{bapst2019structuredagents,
+  author    = {Bapst, Victor and Sanchez-Gonzalez, Alvaro and Doersch, Carl and Stachenfeld, Kimberly L. and Kohli, Pushmeet and Battaglia, Peter W. and Hamrick, Jessica B.},
+  title     = {Structured agents for physical construction},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning (ICML)},
+  year      = {2019},
+  note      = {arXiv:1904.03177}
+}
+@article{ghasemipour2022blocksassemble,
+  author  = {Ghasemipour, Seyed Kamyar Seyed and Freeman, Daniel and David, Byron and Gu, Shixiang Shane and Kataoka, Satoshi and Mordatch, Igor},
+  title   = {Blocks Assemble! {L}earning to Assemble with Large-Scale Structured Reinforcement Learning},
+  journal = {arXiv preprint arXiv:2203.13733},
+  year    = {2022}
+}
+@article{ziegler2019finetuning,
+  author  = {Ziegler, Daniel M. and Stiennon, Nisan and Wu, Jeffrey and Brown, Tom B. and Radford, Alec and Amodei, Dario and Christiano, Paul and Irving, Geoffrey},
+  title   = {Fine-Tuning Language Models from Human Preferences},
+  journal = {arXiv preprint arXiv:1909.08593},
+  year    = {2019}
+}
+@article{ouyang2022instructgpt,
+  author  = {Ouyang, Long and Wu, Jeff and Jiang, Xu and Almeida, Diogo and Wainwright, Carroll L. and Mishkin, Pamela and Zhang, Chong and Agarwal, Sandhini and Slama, Katarina and Ray, Alex and Schulman, John and Hilton, Jacob and Kelton, Fraser and Miller, Luke and Simens, Maddie and Askell, Amanda and Welinder, Peter and Christiano, Paul and Leike, Jan and Lowe, Ryan},
+  title   = {Training language models to follow instructions with human feedback},
+  journal = {arXiv preprint arXiv:2203.02155},
+  year    = {2022}
+}
+@article{baker2022vpt,
+  author  = {Baker, Bowen and Akkaya, Ilge and Zhokhov, Peter and Huizinga, Joost and Tang, Jie and Ecoffet, Adrien and Houghton, Brandon and Sampedro, Raul and Clune, Jeff},
+  title   = {Video {PreTraining} ({VPT}): Learning to Act by Watching Unlabeled Online Videos},
+  journal = {arXiv preprint arXiv:2206.11795},
+  year    = {2022}
+}
+@article{ramrakhya2023pirlnav,
+  author  = {Ramrakhya, Ram and Batra, Dhruv and Wijmans, Erik and Das, Abhishek},
+  title   = {{PIRLNav}: Pretraining with Imitation and {RL} Finetuning for {ObjectNav}},
+  journal = {arXiv preprint arXiv:2301.07302},
+  year    = {2023}
+}
+@inproceedings{rudner2021klpathologies,
+  author    = {Rudner, Tim G. J. and Lu, Cong and Osborne, Michael A. and Gal, Yarin and Teh, Yee Whye},
+  title     = {On Pathologies in {KL}-Regularized Reinforcement Learning from Expert Demonstrations},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+  note      = {arXiv:2212.13936}
+}
+@article{harb2017deliberationcost,
+  author  = {Harb, Jean and Bacon, Pierre-Luc and Klissarov, Martin and Precup, Doina},
+  title   = {When Waiting is not an Option: Learning Options with a Deliberation Cost},
+  journal = {arXiv preprint arXiv:1709.04571},
+  year    = {2017}
+}
+@inproceedings{xiang2020learningtostop,
+  author    = {Xiang, Jiannan and Wang, Xin Eric and Wang, William Yang},
+  title     = {Learning to Stop: A Simple yet Effective Approach to Urban Vision-Language Navigation},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2020},
+  year      = {2020},
+  note      = {arXiv:2009.13112}
+}
+@inproceedings{pardo2018timelimits,
+  author    = {Pardo, Fabio and Tavakoli, Arash and Levdik, Vitaly and Kormushev, Petar},
+  title     = {Time Limits in Reinforcement Learning},
+  booktitle = {Proceedings of the 35th International Conference on Machine Learning (ICML)},
+  series    = {PMLR},
+  volume    = {80},
+  pages     = {4042--4051},
+  year      = {2018},
+  note      = {arXiv:1712.00378}
+}
 
+% ---- datasets, metrics, test-time compute, reporting ------------------------------------------------------------
 @article{zhou2016thingi10k,
-  title   = {{Thingi10K}: A Dataset of 10,000 {3D}-Printing Models},
   author  = {Zhou, Qingnan and Jacobson, Alec},
+  title   = {{Thingi10K}: A Dataset of 10,000 {3D}-Printing Models},
   journal = {arXiv preprint arXiv:1605.04797},
   year    = {2016}
+}
+@article{nooruddin2003voxelization,
+  author  = {Nooruddin, Fakir S. and Turk, Greg},
+  title   = {Simplification and repair of polygonal models using volumetric techniques},
+  journal = {IEEE Transactions on Visualization and Computer Graphics},
+  volume  = {9},
+  number  = {2},
+  pages   = {191--205},
+  year    = {2003},
+  doi     = {10.1109/TVCG.2003.1196006}
+}
+@article{choy2016r2n2,
+  author  = {Choy, Christopher B. and Xu, Danfei and Gwak, JunYoung and Chen, Kevin and Savarese, Silvio},
+  title   = {{3D-R2N2}: A Unified Approach for Single and Multi-view {3D} Object Reconstruction},
+  journal = {arXiv preprint arXiv:1604.00449},
+  year    = {2016}
+}
+@inproceedings{mescheder2019occnet,
+  author    = {Mescheder, Lars and Oechsle, Michael and Niemeyer, Michael and Nowozin, Sebastian and Geiger, Andreas},
+  title     = {Occupancy Networks: Learning {3D} Reconstruction in Function Space},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2019},
+  note      = {arXiv:1812.03828}
+}
+@article{tatarchenko2019whatdonetworkslearn,
+  author  = {Tatarchenko, Maxim and Richter, Stephan R. and Ranftl, Ren{\'e} and Li, Zhuwen and Koltun, Vladlen and Brox, Thomas},
+  title   = {What Do Single-view {3D} Reconstruction Networks Learn?},
+  journal = {arXiv preprint arXiv:1905.03678},
+  year    = {2019}
+}
+@article{cobbe2021verifiers,
+  author  = {Cobbe, Karl and Kosaraju, Vineet and Bavarian, Mohammad and Chen, Mark and Jun, Heewoo and Kaiser, Lukasz and Plappert, Matthias and Tworek, Jerry and Hilton, Jacob and Nakano, Reiichiro and Hesse, Christopher and Schulman, John},
+  title   = {Training Verifiers to Solve Math Word Problems},
+  journal = {arXiv preprint arXiv:2110.14168},
+  year    = {2021}
+}
+@article{brown2024monkeys,
+  author  = {Brown, Bradley and Juravsky, Jordan and Ehrlich, Ryan and Clark, Ronald and Le, Quoc V. and R{\'e}, Christopher and Mirhoseini, Azalia},
+  title   = {Large Language Monkeys: Scaling Inference Compute with Repeated Sampling},
+  journal = {arXiv preprint arXiv:2407.21787},
+  year    = {2024}
+}
+@article{snell2024testtimecompute,
+  author  = {Snell, Charlie and Lee, Jaehoon and Xu, Kelvin and Kumar, Aviral},
+  title   = {Scaling {LLM} Test-Time Compute Optimally can be More Effective than Scaling Model Parameters},
+  journal = {arXiv preprint arXiv:2408.03314},
+  year    = {2024}
+}
+@inproceedings{henderson2018drlmatters,
+  author    = {Henderson, Peter and Islam, Riashat and Bachman, Philip and Pineau, Joelle and Precup, Doina and Meger, David},
+  title     = {Deep Reinforcement Learning that Matters},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  year      = {2018},
+  note      = {arXiv:1709.06560}
+}
+@article{colas2018howmanyseeds,
+  author  = {Colas, C{\'e}dric and Sigaud, Olivier and Oudeyer, Pierre-Yves},
+  title   = {How Many Random Seeds? {S}tatistical Power Analysis in Deep Reinforcement Learning Experiments},
+  journal = {arXiv preprint arXiv:1806.08295},
+  year    = {2018}
+}
+@inproceedings{agarwal2021precipice,
+  author    = {Agarwal, Rishabh and Schwarzer, Max and Castro, Pablo Samuel and Courville, Aaron and Bellemare, Marc G.},
+  title     = {Deep Reinforcement Learning at the Edge of the Statistical Precipice},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+  note      = {arXiv:2108.13264}
+}
+@article{pineau2021reproducibility,
+  author  = {Pineau, Joelle and Vincent-Lamarre, Philippe and Sinha, Koustuv and Larivi{\`e}re, Vincent and Beygelzimer, Alina and d'Alch{\'e}-Buc, Florence and Fox, Emily and Larochelle, Hugo},
+  title   = {Improving Reproducibility in Machine Learning Research (A Report from the {NeurIPS} 2019 Reproducibility Program)},
+  journal = {Journal of Machine Learning Research},
+  year    = {2021},
+  note    = {arXiv:2003.12206}
 }

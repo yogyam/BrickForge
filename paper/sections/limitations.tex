@@ -16,15 +16,20 @@ We state these as findings rather than caveats, because each one changes what th
   effect when one case can move by 0.3.
   \item \textbf{Stability is a model, not a test.} The force model uses a literature clutch constant, ignores lateral
   loads, friction and deformation, and no build was assembled physically. Every ``stable'' in this paper means
-  \stablenote.
+  \stablenote. It is also conservative in two ways relative to StableLego~\citep{liu2024stablelego}: the capacity is
+  divided over four points per stud rather than applied per contact point, and equilibrium is a hard constraint,
+  a formulation StableLego found solvable on only 58\,\% of its physical samples. Some builds we call unstable would
+  likely stand.
   \item \textbf{The learned policies are distilled from the search.} ``Learned versus hand-engineered'' is really
   learned-from-hand-engineered: the imitation targets are the search's builds, and RL starts from that policy with a
   KL penalty towards it. The policy did not discover a different style of building; it got better at the search's.
   \item \textbf{Small benchmark, few seeds.} Fifty-two attempted cases, two training seeds for the v2 ladder, one
-  seed for the v1 arms and the ablations, one decode seed (decoding is deterministic). Differences below about 0.02
-  should be read as observed, not established. We report ranges, not confidence intervals.
+  seed for the v1 arms and the ablations, one decode seed (decoding is deterministic). Every reporting guideline we know of asks for
+  more seeds than this \citep{henderson2018drlmatters,colas2018howmanyseeds,agarwal2021precipice}. Differences below
+  about 0.02 should be read as observed, not established. We report ranges, not confidence intervals.
   \item \textbf{A small world.} One grid (16\,$\times$\,16\,$\times$\,8), solid fill, six upright bricks, one colour, no
-  plates or slopes, no inventory constraints. Thin objects occupy 20 to 90 of 2048 cells and fragment at this
+  plates or slopes, no inventory constraints; recent learned generators use 20\,$\times$\,20\,$\times$\,20 grids and
+  eight brick types \citep{pun2025brickgpt,ahn2024brecs}. Thin objects occupy 20 to 90 of 2048 cells and fragment at this
   resolution; grid resolution is the main lever and was not varied.
   \item \textbf{Three budget points, and the largest rarely binds.} The budget study has three points, and at 200 the
   cap is almost never the stopping reason. A finer sweep below 100 pieces would say more about the trade-off.
