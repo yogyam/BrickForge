@@ -1,175 +1,184 @@
 # BrickForge
 
-Converts a 3D mesh into a LEGO-compatible brick build, a parts list, and checked step-by-step assembly order.
-Research goal: compare a deterministic baseline, a supervised model, and RL under identical geometry and
-evaluation rules, across piece budgets and a structural stability model. See `BrickForge_PRD_Design_Doc.md`.
+**Turn any 3D model into a buildable LEGO-style brick model, with a parts list and step-by-step instructions.**
 
-**Status: M0 through M6 complete (baseline, SFT, PPO RL generators benchmarked; learned pipeline within 0.012 IoU of the search baseline at equal cost, reproduced by a second training seed, two ablations run; M7 paper draft in `paper/`, `make paper`); photo input next.** CPU-only CLI with catalog, build schema, tested LDraw/Three.js transforms,
-mesh normalization, voxelizer, greedy baseline, authoritative validator, assembly planner with insertion-path
-checks and replay validation, static force-model stability analysis, BOM/LDraw export, and a static viewer.
-Learned generators run through the same validator and planner as the baseline. No server. Nothing here is physically tested: every label reads
-"checks passed for the simplified brick model".
+Give BrickForge a 3D mesh (an `.stl` or `.glb` file). It snaps the shape onto a grid of studs, picks bricks from a
+small catalogue, checks that every brick sits on something, that nothing overlaps, that the whole thing is one
+connected piece, and that it holds together under a simple physics model. Then it writes out the build, a bill of
+materials, an LDraw file, and an assembly order you can scrub through in your browser.
 
-## Setup
+![A mesh, the greedy search's build, and the learned policy's build](paper/figures/teaser.png)
 
-Requires `uv` and Python 3.12. If the project lives in an iCloud-synced folder (for example `~/Desktop`),
-the virtualenv must live outside it, because iCloud marks files under dot-directories as hidden and Python 3.12
-then refuses to load the editable-install `.pth`. The Makefile handles this; for direct `uv` use, export
-`UV_PROJECT_ENVIRONMENT=$HOME/.venvs/brickforge` first.
+*Left: a Thingi10K mesh voxelized onto a 16 x 16 x 8 grid. Middle: the build from the hand-written search.
+Right: the build from the learned policy. Colours only separate neighbouring bricks.*
 
-```sh
-make setup      # uv sync into ~/.venvs/brickforge
-make test       # pytest
-make demo       # fixtures + one success (sphere) + one intentional failure (open mesh)
-```
+It is also a small research project. Three different "brains" can choose the next brick: a hand-written greedy
+search, a tiny neural network (about 100k parameters) trained to imitate that search, and the same network
+improved with reinforcement learning. All three are compared on the same frozen benchmark, under the same rules,
+at piece budgets of 50, 100 and 200. The write-up lives in [`paper/`](paper/) and the short version is below.
 
-## CLI
+Everything runs on a laptop. No cloud, no GPU required for using it (training used an Apple M5 Pro).
 
-Use `./bf` instead of `uv run brickforge`: it points uv at the external virtualenv. A bare `uv run` without
-`UV_PROJECT_ENVIRONMENT` set creates a `.venv` inside the project, which iCloud then breaks. To make plain
-`uv run` work everywhere, add `export UV_PROJECT_ENVIRONMENT=$HOME/.venvs/brickforge` to your `~/.zshrc`.
+---
+
+## Quick start
+
+You need [`uv`](https://docs.astral.sh/uv/) and Python 3.12.
 
 ```sh
-./bf fixtures                                   # write 13 procedural STL fixtures
-./bf generate --mesh fixtures/meshes/sphere.stl --out runs/sphere \
-    --size 16 16 8 --max-pieces 100 --color 4 --up +z --yaw 0 --seed 42
-./bf validate runs/sphere/build.json
-./bf plan runs/sphere/build.json --write    # recompute checked steps
-./bf stability runs/sphere/build.json       # force-model stability, final and per step
-./bf export runs/sphere/build.json --out runs/sphere/exports
+git clone https://github.com/yogyam/BrickForge.git
+cd BrickForge
+make setup      # creates the virtualenv and installs everything
+make demo       # builds a sphere and shows what an intentional failure looks like
 ```
 
-`generate` writes `normalization.json`, `voxels.json`, `build.json`, `validation.json`, `plan.json`, `stability.json`, `bom.csv`,
-`build.ldr`, and `result.json`. Parsing (`--parse-timeout`, default 60 s) and search (`--generate-timeout`, default
-30 s) have independent wall-clock limits; a parse timeout fails with `worker_timeout`, a search timeout returns the
-best candidate found so far and records `search_aborted`. `result.json` carries one of `validated_candidate`, `partial_candidate`,
-`no_valid_candidate`, or `failed` with an error code, plus IoU, coverage, extraneous occupancy, per-stage
-timings, and per-strategy diagnostics. A failed or partial result never produces an invented build.
-
-## Viewer
-
-Open `viewer/index.html` in a browser (no server needed), load a `build.json`, optionally the matching
-`voxels.json` to see the target cells, optionally `stability.json` to see per-step stability, and scrub
-through steps with the slider or arrow keys. The page draws
-only the stored placements using the documented canonical-to-scene transform.
-
-## Learned generator (M5)
+Then build something of your own:
 
 ```sh
-make sft-data                      # synthetic families -> data/sft/synthetic.jsonl (add --thingi N for the Thingi pool)
-make sft-gate                      # 32-example overfit gate on Metal, ~2 minutes
-make sft-train                     # full run: 20k steps, augmentation, ~25 minutes on Metal -> checkpoints/sft_v1.pt
-make sft-bench                     # frozen benchmark with greedy_v1, sft_v1, sft_v1_nostop, then audit
+./bf generate --mesh path/to/your_model.stl --out runs/my_model --max-pieces 100
 ```
 
-Result (`docs/benchmarks/sft_v1.md`, 53 held-out cases, 200-piece cap, mean IoU over attempted cases with failed
-builds scored 0): greedy 0.705, sft_v1 0.614, sft_v1_nostop 0.639. The supervised policy matches the baseline on procedural shapes (0.81 vs 0.83) and trails on real
-meshes (0.59 vs 0.67). Before the single-component trim its occupancy IoU exceeds the teacher's; the gap is interlocking
-and dead-end avoidance, not coverage. Full analysis and the implications for RL are in `docs/sft.md`.
+Open [`viewer/index.html`](viewer/index.html) in any browser (no server needed), load
+`runs/my_model/build.json`, and step through the assembly with the slider or the arrow keys. Load the matching
+`voxels.json` to see the target shape, and `stability.json` to see how each step fares under the force model.
 
-## RL generator (M6)
+> **Working from an iCloud-synced folder?** (`~/Desktop` and `~/Documents` usually are.) The virtualenv has to live
+> outside it, because iCloud hides dot-directories and Python then cannot find the project. `make setup` and
+> `./bf` already handle this by using `~/.venvs/brickforge`. If you want plain `uv run` to work too, add
+> `export UV_PROJECT_ENVIRONMENT=$HOME/.venvs/brickforge` to your shell profile.
+
+---
+
+## What you get
+
+`./bf generate` writes a folder with:
+
+| file | what it is |
+|---|---|
+| `build.json` | every brick: type, position, rotation, colour, plus the checked assembly steps |
+| `bom.csv` | the parts list (how many of each brick) |
+| `build.ldr` | an LDraw file you can open in LDView, Stud.io or similar |
+| `voxels.json` | the target shape as grid cells, for the viewer |
+| `validation.json`, `plan.json`, `stability.json` | the checker reports: legality, assembly order, force model |
+| `result.json` | the outcome in one place: status, fidelity, timings |
+
+The status is one of four honest words. `validated_candidate` means everything passed. `partial_candidate` means
+the build is legal but covers less than 80 % of the shape, or some pieces had to be dropped because they were not
+connected. `no_valid_candidate` means no legal build was found. `failed` means the input itself was rejected (for
+example a mesh with holes in it). BrickForge never invents a build to hide a failure.
+
+**Useful options for `generate`:** `--max-pieces N` caps the build; `--size X Y Z` sets the grid in studs and brick
+layers (default `16 16 8`); `--up +z` says which axis of your model points up; `--color 4` picks the brick colour
+(LDraw colour codes). The full list: `./bf generate --help`.
+
+**Other commands:** `./bf validate build.json`, `./bf plan build.json --write` (recompute the assembly order),
+`./bf stability build.json` (force model, final build and every step), `./bf export build.json --out dir`,
+`./bf fixtures` (write the 13 test shapes used below).
+
+---
+
+## How it works, in plain words
+
+1. **Voxelize.** The mesh is rotated upright, scaled to fit the grid, and each grid cell is marked "inside" or
+   "outside". The grid is 16 studs by 16 studs by 8 brick layers, so 2048 cells.
+2. **Place bricks.** A generator picks bricks one at a time from six types (1x1, 1x2, 1x3, 1x4, 2x2, 2x4). It may
+   only choose *legal* placements: inside the grid, not overlapping anything, resting on the ground or on a brick
+   below, covering at least one target cell, and not mostly filler.
+3. **Trim.** Bricks only connect through studs. Anything not connected to the ground through studs is removed, so
+   the result is one object you could pick up.
+4. **Plan.** An assembly order is computed, one brick per step, each dropped straight down onto what is already
+   there, never sealing off a brick that still has to go in.
+5. **Validate.** An independent checker replays the steps and confirms every rule.
+6. **Stability check.** A simplified static force model (in the style of
+   [StableLego](https://arxiv.org/abs/2402.10711)) asks whether the studs can hold the weight. The answer is always
+   labelled *"stable under the simplified static force model; not physically tested"*, because that is exactly what
+   it is.
+
+Steps 3 to 6 are identical for every generator. Only step 2 differs, which is what makes the research comparison
+fair.
+
+---
+
+## The research in one paragraph
+
+Three generators were compared on a frozen benchmark of 53 held-out shapes (13 procedural fixtures and 40 Creative
+Commons meshes from Thingi10K) at budgets of 50, 100 and 200 pieces, scored by how well the finished build overlaps
+the target (intersection-over-union, failed builds counted as 0). At the 200-piece cap the hand-written search
+scores 0.705. The learned policy after reinforcement learning scores 0.693, ties the search on procedural shapes,
+matches its validity and stability counts, and takes under 0.2 s per shape; a second training seed lands on the
+same number. Fidelity barely improves from 100 to 200 pieces for any generator, because builds stop when no legal
+placement remains, long before the cap. Three things did not work and are reported as such: the policy's learned
+"stop" action is unreliable on real meshes and is masked at decode time; a stability bonus in the reward turned out
+to be redundant because the hard rules already enforce it; and the connectivity inputs only matter where the policy
+judges on its own.
+
+| generator | 50 pieces | 100 pieces | 200 pieces | valid | stable* |
+|---|---|---|---|---|---|
+| greedy search (baseline) | 0.621 | 0.696 | **0.705** | 51/53 | 49/53 |
+| imitation (SFT) | 0.566 | 0.653 | 0.662 | 49/53 | 48/53 |
+| imitation + RL, stop masked | 0.609 | 0.682 | **0.693** | 51/53 | 49/53 |
+
+*Mean IoU over the 52 attemptable cases; SFT and RL rows are the mean of two training seeds. \*Stable under the
+simplified static force model; not physically tested. The two invalid cases are deliberate (an open mesh and a
+one-cell pole), so 51 is the ceiling.*
+
+Full details, figures and the failure analysis: the paper in [`paper/`](paper/) (`make paper` builds the PDF),
+[`docs/rl.md`](docs/rl.md), [`docs/sft.md`](docs/sft.md) and the benchmark records in
+[`docs/benchmarks/`](docs/benchmarks/).
+
+---
+
+## Reproducing the research
+
+Everything is a `make` target. Times are for an Apple M5 Pro laptop.
 
 ```sh
-make rl-gate                       # 16-example PPO gate (~5 minutes): after-trim IoU must rise above the SFT init
-make rl-train                      # 250 PPO iterations from sft_v1 (~2 hours on the M5 Pro) -> checkpoints/rl_v1.pt
-make rl-bench                      # frozen benchmark with greedy, sft, sft best-of-8 and rl, then audit
+make test                                          # the test suite (about 30 s)
+make bench                                         # frozen greedy baseline + audit (downloads ~100 MB of meshes once)
+make sft-gate                                      # 2-minute sanity check that the policy can learn at all
+make sft-train sft-bench                           # imitation, v1 data (~25 min) + benchmark
+make rl-gate                                       # 5-minute sanity check for PPO
+make rl-train rl-bench                             # RL from sft_v1 (~2.5 h) + benchmark
+make data-v2 sft-train-v2 rl-train-v2 rl-bench-v2  # the rebalanced-data ladder (~1.5 GB of meshes, ~2.5 h)
+make v2-seed1 rl-bench-v2-seeds                    # the same ladder with a second training seed (~3 h)
+make rl-ablations rl-bench-v2-ablations            # the two ablations (~5 h)
+make paper                                         # regenerate every figure and compile the PDF
 ```
 
-The reward is the IoU of the build *after* the component trim plus a stability bonus, so the policy is trained on what
-the user actually receives.
+Every benchmark file can be re-checked with `./bench audit docs/benchmarks/<name>.jsonl`, which regenerates each
+record from scratch and compares it with what the file claims. Decoding runs on CPU and is bit-identical across
+machines. Meshes, checkpoints and training logs are downloaded or produced locally and never committed.
 
-Result (`docs/benchmarks/rl_v2.md`, 53 held-out cases, 200-piece cap, mean IoU over attempted cases with failed
-builds scored 0): greedy 0.705, sft_v1 0.614, rl_v1 0.654, sft_v2 (rebalanced real-mesh data) 0.672,
-**rl_v2_nostop 0.693**. The learned pipeline ties the frozen search baseline on procedural shapes (0.826 vs 0.828),
-trails it by 0.015 on real meshes (0.653 vs 0.668), and matches its validity and stability counts, at the same decode
-time. RL beats its own SFT initialisation 26 cases to 3; the learned STOP action stays miscalibrated on real meshes and
-is masked at decode time (a choice made on the SFT test split, not the benchmark). All stability statements are under
-the simplified static force model (not physically tested). Design, training curves, the decode decision and the failure
-analysis: `docs/rl.md`. A second training seed lands on the same endpoint (sft_v2_s1 0.652 -> rl_v2_s1_nostop 0.693,
-`docs/benchmarks/rl_v2_s1.md`): the SFT stage varies by 0.02 between seeds and RL removes that spread. Ablations
-(`docs/benchmarks/rl_v2_ablations.md`): dropping the stability reward leaves stability unchanged (the validator and
-trim already enforce it) and costs 0.007 IoU; dropping the connectivity inputs costs 0.035 on the SFT test split and
-0.064 under the learned STOP, but with STOP masked the trim recovers most of it on the benchmark mean (0.690 vs 0.693,
-7 wins / 18 losses head to head).
-
-```sh
-make data-v2 sft-train-v2 rl-train-v2 rl-bench-v2   # the rebalanced-data ladder (~1.5 GB of CC meshes, ~2.5 h)
-make v2-seed1 rl-bench-v2-seeds                     # the same ladder with training seed 1 (~3 h)
-make rl-ablations rl-bench-v2-ablations             # no-stability-reward and no-connectivity-input arms (~5 h)
-```
-
-## MCP server
-
-Start Claude Code in this folder and approve the `brickforge` project server from `.mcp.json`; it can then
-generate, validate, plan, check stability, and inspect individual steps. See `docs/mcp.md`.
-
-## Frozen baseline benchmark (M4)
-
-`docs/benchmarks/baseline_v1.{jsonl,md,summary.json}`: greedy_v1 over 13 procedural cases and 40 CC-licensed
-Thingi10K models, budgets 50/100/200, seed 42, 16x16x8 grid, commit recorded per record. Whole run: 60 s.
-
-| budget | valid | planned | stable | mean IoU | median IoU | mean pieces |
-|---|---|---|---|---|---|---|
-| 50 | 0.962 | 0.962 | 0.925 | 0.633 | 0.698 | 28.4 |
-| 100 | 0.962 | 0.962 | 0.925 | 0.709 | 0.893 | 37.3 |
-| 200 | 0.962 | 0.962 | 0.925 | 0.719 | 0.913 | 39.1 |
-
-What the numbers say: the two invalid cases are the intentional ones (open mesh, zero-cell pole). Doubling the
-budget from 100 to 200 adds almost nothing because the greedy rarely reaches the cap; it stops when no
-supported placement remains. The hard tail is thin or hollow Thingi models that occupy only 20 to 90 of the
-2048 cells and fragment into unconnected islands, where the retained component covers under 20 % of the
-target. Two of those tiny fragments topple under the force model (2 and 5 pieces with overhangs), the first
-sign that the generator should consider stability, which it currently does not. Grid resolution is the main
-lever for thin objects and is a documented limitation, not something to tune after the freeze.
-
-Reproduce: `make bench` (downloads ~100 MB of meshes once into `data/`, never committed). Verify: `./bench audit docs/benchmarks/baseline_v1.jsonl`.
-
-## Fixture results (M1, default 16x16x8 grid, 100-piece cap, M5 Pro)
-
-| Fixture | Status | Coverage | Pieces | Generate (s) |
-|---|---|---|---|---|
-| cube (8x8x4) | validated | 1.000 | 44 | 0.05 |
-| slab | validated | 1.000 | 68 | 0.13 |
-| tower | validated | 1.000 | 8 | 0.01 |
-| l_shape | validated | 1.000 | 90 | 0.15 |
-| t_shape | validated | 1.000 | 43 | 0.07 |
-| bridge | validated | 0.964 | 31 | 0.04 |
-| sphere | validated | 0.975 | 75 | 0.09 |
-| cylinder | validated | 0.901 | 100 | 0.13 |
-| pyramid | partial (disconnected pieces dropped) | 0.946 | 77 | 0.08 |
-| wedge | validated | 1.000 | 42 | 0.04 |
-| flat_sheet_impossible | partial: one layer cannot interlock | 0.050 | 1 | 0.04 |
-| thin_pole | no_valid_candidate: zero cells at this scale | 0 | 0 | 0.00 |
-| open_box_invalid | failed: `non_watertight_mesh` | | | |
-
-All ten simple fixtures are stable under the static force model, final state and every step. The bridge
-peaks at 5.8 % of clutch capacity mid-build (cantilevering the span) and the sphere at 2.4 %; everything else
-sits at zero tension. Per-step analysis costs 0.1 to 1.5 s per build.
-
-Nine of the ten frozen simple fixtures pass the R1 gate (coverage >= 0.80 with a valid candidate); the
-gate requires eight. `tests/test_generate_cli.py::test_release_gate_eight_of_ten_simple_fixtures` enforces it.
+---
 
 ## Known limits
 
-- Greedy baseline fills bottom-up and cannot reach cells more than one brick-width beyond the layer below.
-  Overhangs beyond that are reported as uncovered, not faked.
-- Budget-starved shapes stop at the cap with lower layers complete and upper layers missing.
-- Stability is a static force-model diagnostic with a literature clutch constant (`docs/stability.md`), never
-  a physical test. Labels say so.
-- The planner checks a restricted insertion model only: straight-down insertion, no hand clearance, no
-  insertion force, no clutch or gravity. See `docs/planner.md` for the rules and why backtracking is unnecessary.
-- Solid fill only; hollow shells, multiple colors, plates, and other part types are later work.
-- Viewer uses procedural boxes, not LDraw part geometry. LDraw part files are not bundled (CC BY 2.0 upstream).
+- One grid size at a time, solid fill, six upright bricks, one colour. No plates, slopes or hollow shells yet.
+- Thin or hollow objects can occupy only a few dozen cells at this resolution and may break into islands; the
+  trim then keeps the largest one. A finer grid is the fix, and it is a documented limitation rather than a
+  surprise.
+- The greedy search builds bottom-up and cannot reach overhangs more than one brick wide; it reports them as
+  uncovered rather than faking them.
+- Stability is a model, not a test. No build in this project has been assembled physically.
+- The viewer draws plain boxes, not real LDraw part geometry (LDraw part files are not bundled).
 
-## Layout
+---
+
+## Project layout
 
 ```
-brickcore/   catalog, schema, geometry, transforms, mesh, generate, validate, export, fixtures, cli
-catalog/     basic-bricks-v1.json manifest
-fixtures/    builds/two_brick.json (+ expected LDraw); meshes/ are regenerated by `brickforge fixtures`
-viewer/      static Three.js page
-tests/       pytest suite (collision, stud connections, transforms, serialization, budgets, determinism, CLI)
-ml/          Thingi10K fetcher, benchmark runner, SFT data/policy/trainer/generator (later: RL)
-docs/        geometry, planner, stability, MCP and benchmark notes; docs/benchmarks/ holds frozen results
-scripts/     mcp.sh launcher; ./bf and ./bench wrap the two CLIs
+brickcore/   the core: catalogue, build schema, geometry, voxelizer, greedy search, validator, planner,
+             stability model, LDraw/BOM export, CLI
+ml/          data generation, the policy network, SFT and PPO trainers, learned generators, benchmark runner
+catalog/     basic-bricks-v1.json, the six-brick catalogue
+fixtures/    the 13 procedural test shapes and a two-brick reference build
+viewer/      the static Three.js viewer (open index.html)
+docs/        design notes (geometry, planner, stability, benchmark, SFT, RL, MCP) and docs/benchmarks/ results
+paper/       the paper: LaTeX source, figure scripts, cached builds, number macros
+tests/       pytest suite
 ```
+
+`./bf` and `./bench` are small wrappers that run the two command-line tools inside the right virtualenv. There is
+also an MCP server (`docs/mcp.md`) that lets an AI assistant generate, validate and inspect builds.
+
+The original product and design document is [`BrickForge_PRD_Design_Doc.md`](BrickForge_PRD_Design_Doc.md).
