@@ -46,13 +46,17 @@ def list_fixtures() -> list[str]:
 
 @mcp.tool()
 def generate(mesh_path: str, out_dir: str, max_pieces: int = 100, x_studs: int = 16, y_studs: int = 16,
-             layers: int = 8, color_id: str = "4", up: str = "+z", yaw_deg: int = 0, seed: int = 42) -> dict:
+             layers: int = 8, color_id: str = "4", up: str = "+z", yaw_deg: int = 0, seed: int = 42,
+             generator: str = "greedy_v1") -> dict:
     """Run the full pipeline on a mesh (STL or GLB inside the project). Writes build.json, validation.json,
-    plan.json, stability.json, bom.csv, build.ldr and result.json into out_dir. Returns result.json."""
+    plan.json, stability.json, bom.csv, build.ldr and result.json into out_dir. Returns result.json.
+    generator is greedy_v1 (default) or a learned policy such as sft_v2 / rl_v2_nostop (needs the ml group)."""
     from .cli import main
     out = _safe(out_dir)
     rc = main(["generate", "--mesh", str(_safe(mesh_path)), "--out", str(out), "--max-pieces", str(max_pieces),
-               "--size", str(x_studs), str(y_studs), str(layers), "--color", color_id, "--up", up, "--yaw", str(yaw_deg), "--seed", str(seed)])
+               "--size", str(x_studs), str(y_studs), str(layers), "--color", color_id, "--up", up, "--yaw", str(yaw_deg), "--seed", str(seed), "--generator", generator])
+    if rc == 2:
+        return {"status": "failed", "error_code": "bad_arguments", "exit_code": rc, "message": "see the server log; check the generator name, torch install and argument ranges"}
     result = json.loads((out / "result.json").read_text())
     result["exit_code"] = rc
     result["out_dir"] = str(out.relative_to(ROOT))

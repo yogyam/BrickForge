@@ -12,9 +12,12 @@ node_modules/
 # Data and runs (fetched by scripts, never committed)
 data/
 runs/
-checkpoints/
+checkpoints/*
 *.ckpt
 *.pt
+# the two headline checkpoints are committed so a fresh clone can run all three generators (about 400 KB each)
+!checkpoints/sft_v2.pt
+!checkpoints/rl_v2.pt
 # LaTeX build
 paper/build/
 paper/*.pdf

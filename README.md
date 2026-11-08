@@ -28,9 +28,12 @@ You need [`uv`](https://docs.astral.sh/uv/) and Python 3.12.
 ```sh
 git clone https://github.com/yogyam/BrickForge.git
 cd BrickForge
-make setup      # creates the virtualenv and installs everything
-make demo       # builds a sphere and shows what an intentional failure looks like
+make setup      # creates the virtualenv and installs what the greedy pipeline and the viewer need
+make setup-ml   # optional: adds PyTorch so the learned policies can run too
+make demo       # builds a sphere, shows an intentional failure, then builds the sphere again with the learned policy
 ```
+
+The full hands-on tour, with every output explained, is [`docs/demo.md`](docs/demo.md).
 
 Then build something of your own:
 
@@ -60,6 +63,7 @@ Open [`viewer/index.html`](viewer/index.html) in any browser (no server needed),
 | `build.ldr` | an LDraw file you can open in LDView, Stud.io or similar |
 | `voxels.json` | the target shape as grid cells, for the viewer |
 | `validation.json`, `plan.json`, `stability.json` | the checker reports: legality, assembly order, force model |
+| `normalization.json` | how the mesh was rotated, scaled and placed on the grid |
 | `result.json` | the outcome in one place: status, fidelity, timings |
 
 The status is one of four honest words. `validated_candidate` means everything passed. `partial_candidate` means
@@ -67,9 +71,11 @@ the build is legal but covers less than 80 % of the shape, or some pieces had to
 connected. `no_valid_candidate` means no legal build was found. `failed` means the input itself was rejected (for
 example a mesh with holes in it). BrickForge never invents a build to hide a failure.
 
-**Useful options for `generate`:** `--max-pieces N` caps the build; `--size X Y Z` sets the grid in studs and brick
-layers (default `16 16 8`); `--up +z` says which axis of your model points up; `--color 4` picks the brick colour
-(LDraw colour codes). The full list: `./bf generate --help`.
+**Useful options for `generate`:** `--max-pieces N` caps the build (1 to 200); `--size X Y Z` sets the grid in studs
+and brick layers (default `16 16 8`, up to `24 24 12`); `--up +z` says which axis of your model points up;
+`--color 4` picks the brick colour (LDraw colour codes); `--generator rl_v2_nostop` or `sft_v2` swaps the greedy
+search for a learned policy (needs `make setup-ml` and `uv run --group ml brickforge ...`). The full list:
+`./bf generate --help`.
 
 **Other commands:** `./bf validate build.json`, `./bf plan build.json --write` (recompute the assembly order),
 `./bf stability build.json` (force model, final build and every step), `./bf export build.json --out dir`,
@@ -122,6 +128,9 @@ judges on its own.
 simplified static force model; not physically tested. The two invalid cases are deliberate (an open mesh and a
 one-cell pole), so 51 is the ceiling.*
 
+The two headline checkpoints (`checkpoints/sft_v2.pt`, `checkpoints/rl_v2.pt`, about 400 KB each) are committed, so
+the three-way comparison can be run from a fresh clone with `--generator`; see [`docs/demo.md`](docs/demo.md).
+
 Full details, figures and the failure analysis: the paper in [`paper/`](paper/) (`make paper` builds the PDF),
 [`docs/rl.md`](docs/rl.md), [`docs/sft.md`](docs/sft.md) and the benchmark records in
 [`docs/benchmarks/`](docs/benchmarks/).
@@ -133,7 +142,7 @@ Full details, figures and the failure analysis: the paper in [`paper/`](paper/) 
 Everything is a `make` target. Times are for an Apple M5 Pro laptop.
 
 ```sh
-make test                                          # the test suite (about 30 s)
+make test                                          # the test suite without torch (RL tests skip); make test-ml runs everything
 make bench                                         # frozen greedy baseline + audit (downloads ~100 MB of meshes once)
 make sft-gate                                      # 2-minute sanity check that the policy can learn at all
 make sft-train sft-bench                           # imitation, v1 data (~25 min) + benchmark
@@ -147,7 +156,7 @@ make paper                                         # regenerate every figure and
 
 Every benchmark file can be re-checked with `./bench audit docs/benchmarks/<name>.jsonl`, which regenerates each
 record from scratch and compares it with what the file claims. Decoding runs on CPU and is bit-identical across
-machines. Meshes, checkpoints and training logs are downloaded or produced locally and never committed.
+machines. Meshes, training logs and all other checkpoints are downloaded or produced locally and never committed.
 
 ---
 

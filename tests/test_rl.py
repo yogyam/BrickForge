@@ -3,14 +3,15 @@ import json
 
 import numpy as np
 import pytest
-import torch
 
-from brickcore.generate import _largest_ground_component
-from brickcore.schema import Bounds, Constraints, GeneratorInfo
-from brickcore.validate import validate_build
-from ml.data import synth_target
-from ml.policy import CAND_FEATS, CONN_FEATS, BrickPolicy, candidate_tensors, collate, extend_state_dict
-from ml.rl_env import AssemblyState, RewardConfig, load_policy_for_rl
+torch = pytest.importorskip("torch")  # the ml group is optional; a plain `make setup` has no torch
+
+from brickcore.generate import _largest_ground_component  # noqa: E402 (after the torch skip)
+from brickcore.schema import Bounds, Build, Constraints, GeneratorInfo  # noqa: E402 (after the torch skip)
+from brickcore.validate import validate_build  # noqa: E402 (after the torch skip)
+from ml.data import synth_target  # noqa: E402 (after the torch skip)
+from ml.policy import CAND_FEATS, CONN_FEATS, BrickPolicy, candidate_tensors, collate, extend_state_dict  # noqa: E402 (after the torch skip)
+from ml.rl_env import AssemblyState, RewardConfig, load_policy_for_rl  # noqa: E402 (after the torch skip)
 
 ARCH = {"channels": 8, "hidden": 16, "layers": 2}
 
@@ -144,3 +145,21 @@ def test_ppo_smoke_two_iterations(tmp_path, catalog, monkeypatch):
     assert lines[0]["iter"] == 0 and "eval" in lines[0]
     assert lines[-1]["update"]["n_steps"] > 0 and (tmp_path / "runs" / "rl" / "smoke" / "final_eval.json").exists()
     assert Example  # imported for clarity of the JSONL schema above
+
+
+def test_cli_runs_committed_rl_checkpoint(tmp_path, catalog):
+    """The headline checkpoint is committed so `brickforge generate --generator rl_v2_nostop` works from a clone."""
+    from pathlib import Path
+
+    from brickcore.cli import main
+    from brickcore.fixtures import write_fixtures
+    ckpt = Path(__file__).resolve().parent.parent / "checkpoints" / "rl_v2.pt"
+    if not ckpt.exists():
+        pytest.skip("checkpoints/rl_v2.pt not present")
+    meshes = tmp_path / "meshes"
+    write_fixtures(meshes)
+    out = tmp_path / "rl"
+    assert main(["generate", "--mesh", str(meshes / "cube.stl"), "--out", str(out), "--size", "8", "8", "4", "--generator", "rl_v2_nostop"]) == 0
+    result = json.loads((out / "result.json").read_text())
+    assert result["generator"] == "rl_v2_nostop" and result["status"] == "validated_candidate" and result["iou"] > 0.9
+    assert validate_build(Build.from_json((out / "build.json").read_text()), catalog)["ok"]

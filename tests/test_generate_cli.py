@@ -90,3 +90,40 @@ def test_export_refuses_invalid_build(two_brick, tmp_path):
     p.write_text(json.dumps(raw))
     assert main(["export", str(p), "--out", str(tmp_path / "exp")]) == 1
     assert not (tmp_path / "exp" / "build.ldr").exists()
+
+
+def test_cli_generator_flag_defaults_to_greedy_and_records_name(fixture_meshes, tmp_path):
+    out = tmp_path / "g"
+    assert main(["generate", "--mesh", str(fixture_meshes / "cube.stl"), "--out", str(out), "--size", "8", "8", "4", "--generator", "greedy_v1"]) == 0
+    result = json.loads((out / "result.json").read_text())
+    assert result["generator"] == "greedy_v1" and result["status"] == "validated_candidate"
+    assert Build.from_json((out / "build.json").read_text()).generator.name == "greedy_v1"
+
+
+def test_cli_unknown_generator_is_a_clean_error(fixture_meshes, tmp_path, capsys):
+    out = tmp_path / "x"
+    assert main(["generate", "--mesh", str(fixture_meshes / "cube.stl"), "--out", str(out), "--generator", "nope"]) == 2
+    assert "unknown generator 'nope'" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_cli_out_of_range_arguments_are_clean_errors(fixture_meshes, tmp_path, capsys):
+    out = tmp_path / "x"
+    assert main(["generate", "--mesh", str(fixture_meshes / "cube.stl"), "--out", str(out), "--max-pieces", "500"]) == 2
+    assert "max_pieces" in capsys.readouterr().err
+    assert main(["generate", "--mesh", str(fixture_meshes / "cube.stl"), "--out", str(out), "--size", "30", "16", "0"]) == 2
+    err = capsys.readouterr().err
+    assert "x_studs" in err and "z_plates" in err and "Traceback" not in err
+    assert main(["generate", "--mesh", str(tmp_path / "missing.stl"), "--out", str(out)]) == 2
+    assert "no such mesh file" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_cli_build_commands_reject_non_build_json(fixture_meshes, tmp_path, capsys):
+    out = tmp_path / "cube"
+    assert main(["generate", "--mesh", str(fixture_meshes / "cube.stl"), "--out", str(out), "--size", "8", "8", "4"]) == 0
+    for cmd in (["validate"], ["plan"], ["stability"], ["export", "--out", str(tmp_path / "exp")]):
+        assert main([cmd[0], str(out / "voxels.json"), *cmd[1:]]) == 2, cmd
+        assert "is not a build.json" in capsys.readouterr().err
+    assert main(["validate", str(tmp_path / "nope.json")]) == 2
+    assert "no such file" in capsys.readouterr().err

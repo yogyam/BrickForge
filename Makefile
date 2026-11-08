@@ -1,14 +1,23 @@
 # The virtualenv lives outside the project because ~/Desktop is iCloud-synced on this machine and the
 # sync daemon marks files under dot-directories as hidden, which makes Python skip the editable .pth.
 export UV_PROJECT_ENVIRONMENT ?= $(HOME)/.venvs/brickforge
+# An active conda/venv in the user's shell would make uv print a warning on every command; uv ignores it anyway.
+unexport VIRTUAL_ENV
 
-.PHONY: setup test fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds rl-ablations rl-bench-v2-ablations paper-builds paper-figs paper-pdf paper-check paper clean
+.PHONY: setup setup-ml test test-ml fixtures demo bench sft-data sft-gate sft-train sft-bench rl-gate rl-train rl-bench data-v2 sft-train-v2 rl-train-v2 rl-bench-v2 v2-seed1 rl-bench-v2-seeds rl-ablations rl-bench-v2-ablations paper-builds paper-figs paper-pdf paper-check paper clean
 
 setup:
 	uv sync
 
+# adds torch so the learned generators (sft_v2, rl_v2_nostop) and the research targets work
+setup-ml:
+	uv sync --group ml
+
 test:
 	uv run pytest -q
+
+test-ml:
+	uv run --group ml pytest -q
 
 fixtures:
 	uv run brickforge fixtures
@@ -17,7 +26,9 @@ demo: fixtures
 	uv run brickforge generate --mesh fixtures/meshes/sphere.stl --out runs/sphere
 	@echo "--- intentional failure: the open box is not watertight and must be rejected (exit 1 is expected) ---"
 	-@uv run brickforge generate --mesh fixtures/meshes/open_box_invalid.stl --out runs/open_box_invalid
-	@echo "--- done. Open viewer/index.html and load runs/sphere/build.json (and voxels.json for the target) ---"
+	@echo "--- the same sphere with the learned policy (skipped with a one-line hint if torch is not installed; run make setup-ml) ---"
+	-@uv run --group ml brickforge generate --mesh fixtures/meshes/sphere.stl --out runs/sphere_rl --generator rl_v2_nostop
+	@echo "--- done. Open viewer/index.html and load runs/sphere/build.json or runs/sphere_rl/build.json (plus voxels.json for the target) ---"
 
 bench:
 	uv run brickforge-bench fetch-thingi --n 40
