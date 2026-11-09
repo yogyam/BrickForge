@@ -195,3 +195,10 @@ tests/       pytest suite
 also an MCP server (`docs/mcp.md`) that lets an AI assistant generate, validate and inspect builds.
 
 The original product and design document is [`BrickForge_PRD_Design_Doc.md`](BrickForge_PRD_Design_Doc.md).
+
+---
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE). The Thingi10K meshes used for the benchmark are not redistributed here; the
+benchmark manifest records each model's own licence.

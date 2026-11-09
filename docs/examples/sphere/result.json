@@ -1,0 +1,77 @@
+{
+  "coverage": 0.9745,
+  "diagnostics": {
+    "grid": [
+      16,
+      16,
+      8
+    ],
+    "seconds": 0.113,
+    "strategies": [
+      {
+        "components_before_trim": 1,
+        "coverage": 0.9745,
+        "dropped_disconnected": 0,
+        "extraneous": 0.0,
+        "instruction_status": "planned",
+        "iou": 0.9745,
+        "layers_unreached_due_to_budget": 0,
+        "pieces": 75,
+        "seconds": 0.04,
+        "strategy": "exact",
+        "valid": true
+      },
+      {
+        "components_before_trim": 1,
+        "coverage": 0.9847,
+        "dropped_disconnected": 0,
+        "extraneous": 0.0326,
+        "instruction_status": "planned",
+        "iou": 0.9531,
+        "layers_unreached_due_to_budget": 0,
+        "pieces": 72,
+        "seconds": 0.036,
+        "strategy": "mostly",
+        "valid": true
+      },
+      {
+        "components_before_trim": 1,
+        "coverage": 0.9847,
+        "dropped_disconnected": 0,
+        "extraneous": 0.0326,
+        "instruction_status": "planned",
+        "iou": 0.9531,
+        "layers_unreached_due_to_budget": 0,
+        "pieces": 72,
+        "seconds": 0.037,
+        "strategy": "half",
+        "valid": true
+      }
+    ],
+    "target_cells": 392
+  },
+  "extraneous": 0.0,
+  "generator": "greedy_v1",
+  "instruction_status": "planned",
+  "iou": 0.9745,
+  "label": "checks passed for the simplified brick model",
+  "pieces": 75,
+  "search_aborted": null,
+  "stability": {
+    "all_steps_stable": true,
+    "final_stable": true,
+    "final_utilization": 0.0053,
+    "first_unstable_step": null,
+    "label": "stable under the simplified static force model; not physically tested",
+    "max_step_utilization": 0.0242,
+    "mode": "ok"
+  },
+  "status": "validated_candidate",
+  "timings_s": {
+    "generate": 0.113,
+    "load": 0.002,
+    "normalize": 0.0,
+    "stability": 1.48,
+    "voxelize": 0.07
+  }
+}

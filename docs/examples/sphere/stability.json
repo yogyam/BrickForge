@@ -1,0 +1,477 @@
+{
+  "all_steps_stable": true,
+  "final": {
+    "mode": "ok",
+    "pieces": 75,
+    "stable": true,
+    "utilization": 0.0053,
+    "worst_joint": {
+      "lower": "b0068",
+      "tension_utilization": 0.0053,
+      "upper": "b0075"
+    }
+  },
+  "first_unstable_step": null,
+  "label": "stable under the simplified static force model; not physically tested",
+  "max_step_utilization": 0.0242,
+  "model": "stud_joint_lp_v1",
+  "params": {
+    "brick_2x4_mass_g": 2.32,
+    "clutch_newton_per_stud": 0.98,
+    "gravity_m_s2": 9.81,
+    "source": "T=0.98 N/stud from StableLego (Liu et al. 2024); mass 2.32 g per 2x4 brick",
+    "sub_point_offset_mm": 2.0
+  },
+  "per_step": [
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 1,
+      "utilization": 0.0
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 2,
+      "utilization": 0.0
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 3,
+      "utilization": 0.0077
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 4,
+      "utilization": 0.0077
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 5,
+      "utilization": 0.0077
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 6,
+      "utilization": 0.0077
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 7,
+      "utilization": 0.0116
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 8,
+      "utilization": 0.0116
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 9,
+      "utilization": 0.0019
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 10,
+      "utilization": 0.0025
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 11,
+      "utilization": 0.0
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 12,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 13,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 14,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 15,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 16,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 17,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 18,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 19,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 20,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 21,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 22,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 23,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 24,
+      "utilization": 0.0035
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 25,
+      "utilization": 0.0035
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 26,
+      "utilization": 0.0022
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 27,
+      "utilization": 0.0213
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 28,
+      "utilization": 0.0213
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 29,
+      "utilization": 0.0213
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 30,
+      "utilization": 0.0213
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 31,
+      "utilization": 0.0227
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 32,
+      "utilization": 0.0242
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 33,
+      "utilization": 0.0242
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 34,
+      "utilization": 0.0242
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 35,
+      "utilization": 0.0242
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 36,
+      "utilization": 0.0242
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 37,
+      "utilization": 0.0242
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 38,
+      "utilization": 0.0107
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 39,
+      "utilization": 0.0105
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 40,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 41,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 42,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 43,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 44,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 45,
+      "utilization": 0.0147
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 46,
+      "utilization": 0.0152
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 47,
+      "utilization": 0.0149
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 48,
+      "utilization": 0.0148
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 49,
+      "utilization": 0.0148
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 50,
+      "utilization": 0.0146
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 51,
+      "utilization": 0.0144
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 52,
+      "utilization": 0.0141
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 53,
+      "utilization": 0.0139
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 54,
+      "utilization": 0.0086
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 55,
+      "utilization": 0.0083
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 56,
+      "utilization": 0.0081
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 57,
+      "utilization": 0.0082
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 58,
+      "utilization": 0.0082
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 59,
+      "utilization": 0.0072
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 60,
+      "utilization": 0.007
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 61,
+      "utilization": 0.0069
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 62,
+      "utilization": 0.007
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 63,
+      "utilization": 0.007
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 64,
+      "utilization": 0.0069
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 65,
+      "utilization": 0.0064
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 66,
+      "utilization": 0.0065
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 67,
+      "utilization": 0.0061
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 68,
+      "utilization": 0.0059
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 69,
+      "utilization": 0.0059
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 70,
+      "utilization": 0.0059
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 71,
+      "utilization": 0.0059
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 72,
+      "utilization": 0.0058
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 73,
+      "utilization": 0.0057
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 74,
+      "utilization": 0.0056
+    },
+    {
+      "mode": "ok",
+      "stable": true,
+      "step": 75,
+      "utilization": 0.0053
+    }
+  ]
+}

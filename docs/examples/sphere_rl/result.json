@@ -1,0 +1,42 @@
+{
+  "coverage": 0.9566,
+  "diagnostics": {
+    "checkpoint": "rl_v2.pt",
+    "components_before_trim": 1,
+    "coverage": 0.9566326530612245,
+    "dropped_disconnected": 0,
+    "extraneous": 0.0,
+    "instruction_status": "planned",
+    "iou": 0.9566326530612245,
+    "pieces": 67,
+    "raw_pieces": 67,
+    "seconds": 0.25,
+    "stop_reason": "no_legal_candidate",
+    "target_cells": 392,
+    "valid": true
+  },
+  "extraneous": 0.0,
+  "generator": "rl_v2_nostop",
+  "instruction_status": "planned",
+  "iou": 0.9566,
+  "label": "checks passed for the simplified brick model",
+  "pieces": 67,
+  "search_aborted": null,
+  "stability": {
+    "all_steps_stable": true,
+    "final_stable": true,
+    "final_utilization": 0.0014,
+    "first_unstable_step": null,
+    "label": "stable under the simplified static force model; not physically tested",
+    "max_step_utilization": 0.0158,
+    "mode": "ok"
+  },
+  "status": "validated_candidate",
+  "timings_s": {
+    "generate": 0.261,
+    "load": 0.002,
+    "normalize": 0.0,
+    "stability": 1.286,
+    "voxelize": 0.071
+  }
+}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BrickForge</title>
+<meta name="description" content="BrickForge turns a 3D model into a brick model you could build: a parts list, step-by-step instructions, and an honest check of how faithful and how sturdy the result is. A hand-written search and a tiny learned model, compared under a piece budget.">
+<link rel="canonical" href="https://yogyam.github.io/BrickForge/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="BrickForge: Learning to Build Brick Models Under a Piece Budget">
+<meta property="og:description" content="A 3D model goes in; a parts list and step-by-step brick instructions come out, with a fidelity score and a stability check. A 100k-parameter learned model gets within a hair of the hand-written search it learned from, all on one laptop.">
+<meta property="og:url" content="https://yogyam.github.io/BrickForge/">
+<meta property="og:image" content="https://yogyam.github.io/BrickForge/docs/media/social_card.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BrickForge: Learning to Build Brick Models Under a Piece Budget">
+<meta name="twitter:description" content="A 3D model goes in; a parts list and step-by-step brick instructions come out, with a fidelity score and a stability check. A 100k-parameter learned model gets within a hair of the hand-written search it learned from, all on one laptop.">
+<meta name="twitter:image" content="https://yogyam.github.io/BrickForge/docs/media/social_card.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='11' width='26' height='18' rx='2' fill='%23b40000'/%3E%3Crect x='7' y='5' width='7' height='7' rx='1.5' fill='%23b40000'/%3E%3Crect x='18' y='5' width='7' height='7' rx='1.5' fill='%23b40000'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --ink: #0b0b0b; --ink2: #52514e; --surface: #fcfcfb; --card: #ffffff;
+    --red: #b40000; --blue: #2a78d6; --rule: #e5e4e0;
+  }
+  :root:not([data-theme="light"]) { color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --ink: #f0efec; --ink2: #b0afaa; --surface: #141413; --card: #1d1c1b; --rule: #33322f; --red: #ff6b6b; --blue: #6fa8e8; }
+  }
+  :root[data-theme="dark"] { --ink: #f0efec; --ink2: #b0afaa; --surface: #141413; --card: #1d1c1b; --rule: #33322f; --red: #ff6b6b; --blue: #6fa8e8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--ink); font: 17px/1.65 Georgia, 'Times New Roman', serif; padding: 0 20px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding-block: 48px 80px; }
+  h1 { font-size: 1.9em; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .subtitle { font-size: 1.15em; color: var(--ink2); margin: 0 0 18px; }
+  .author { margin: 0 0 20px; color: var(--ink2); }
+  .author b { color: var(--ink); font-weight: 600; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 36px; font-family: system-ui, sans-serif; font-size: 0.85em; }
+  .links a { display: inline-block; padding: 8px 18px; border-radius: 999px; background: var(--ink); color: var(--surface); text-decoration: none; font-weight: 600; }
+  .links a.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  h2 { font-size: 1.25em; margin: 44px 0 12px; }
+  p { margin: 0 0 16px; }
+  .tldr { background: var(--card); border: 1px solid var(--rule); border-left: 4px solid var(--red); border-radius: 8px; padding: 18px 22px; margin: 0 0 8px; }
+  .tldr p:last-child { margin-bottom: 0; }
+  figure { margin: 28px 0; }
+  figure img, figure iframe { max-width: 100%; border-radius: 8px; border: 1px solid var(--rule); background: #fcfcfb; display: block; }
+  figure iframe { width: 100%; height: 560px; background: var(--card); }
+  figcaption { font-size: 0.85em; color: var(--ink2); margin-top: 8px; font-family: system-ui, sans-serif; line-height: 1.5; }
+  table { border-collapse: collapse; width: 100%; margin: 20px 0; font-family: system-ui, sans-serif; font-size: 0.82em; }
+  @media (max-width: 620px) { table { display: block; overflow-x: auto; white-space: nowrap; } }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .hl { color: var(--blue); font-weight: 700; }
+  .warn { color: var(--red); font-weight: 700; }
+  pre { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 0.78em; line-height: 1.5; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+  ol.steps { padding-left: 1.3em; margin: 0 0 16px; }
+  ol.steps li { margin-bottom: 8px; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; font-family: system-ui, sans-serif; font-size: 0.85em; }
+  .toggle button { padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .foot { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); color: var(--ink2); font-size: 0.85em; font-family: system-ui, sans-serif; }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>BrickForge: Learning to Build Brick Models Under a Piece&nbsp;Budget</h1>
+<p class="subtitle">A 3D model goes in. A parts list, step-by-step brick instructions and an honest check come out.</p>
+<p class="author"><b>Yogya Mehrotra</b> · independent researcher · November 2026</p>
+
+<div class="links">
+  <a href="docs/brickforge.pdf">📄 Paper (PDF)</a>
+  <a class="ghost" href="https://github.com/yogyam/BrickForge">Code &amp; Checkpoints</a>
+  <a class="ghost" href="https://github.com/yogyam/BrickForge/blob/main/docs/demo.md">Walkthrough</a>
+  <a class="ghost" href="viewer/index.html?build=../docs/examples/sphere/build.json&amp;voxels=../docs/examples/sphere/voxels.json&amp;stability=../docs/examples/sphere/stability.json">Viewer</a>
+</div>
+
+<div class="tldr">
+<p><b>TL;DR.</b> BrickForge takes a 3D mesh and turns it into a LEGO-style brick model that would hold together: it snaps the shape onto a grid of studs, picks bricks from a six-piece catalogue, makes sure every brick rests on something and that the whole thing is one connected object, works out an assembly order, and runs a simple physics check on every step. Three different "brains" can choose the bricks: a hand-written search, a small neural network trained to imitate that search, and the same network improved with reinforcement learning. On 53 held-out shapes, the learned network ends up <b>within a hair of the hand-written search</b> (0.693 vs 0.705 on a 0-to-1 fidelity score), with the same number of valid and stable builds, and it runs in under a fifth of a second per shape on a laptop. Two things did not work, and the page says so.</p>
+</div>
+
+<h2>What it does</h2>
+<p>You give it a closed 3D model, a <code>.stl</code> or <code>.glb</code> file, and a piece budget. It gives you back a folder: every brick with its position, the order to put them on, a parts list you could shop from, a file you can open in LEGO design software, and a verdict. The verdict is one of four plain words. <i>Validated</i> means every check passed. <i>Partial</i> means the build is legal but covers less than 80% of the shape. <i>No valid candidate</i> means no legal build was found. <i>Failed</i> means the input itself was rejected, for example a mesh with a hole in it. BrickForge never invents a build to hide a failure.</p>
+
+<figure>
+  <img src="paper/figures/teaser.png" alt="Left: a mesh snapped to a 16 by 16 by 8 grid. Middle: the hand-written search's build. Right: the learned network's build." width="1518" height="440">
+  <figcaption>A mesh from Thingi10K snapped onto the 16 × 16 × 8 grid (left), the hand-written search's build (middle) and the learned network's build (right). Colours only tell neighbouring bricks apart.</figcaption>
+</figure>
+
+<h2>Try it yourself</h2>
+<p>You need <a href="https://docs.astral.sh/uv/">uv</a> and about a minute. No GPU. The demo builds a sphere, then deliberately feeds in a broken mesh so you can see what a refusal looks like, then builds the sphere again with the learned network (that last step needs <code>make setup-ml</code>, which adds PyTorch).</p>
+<pre><code>git clone https://github.com/yogyam/BrickForge.git &amp;&amp; cd BrickForge
+make setup
+make demo</code></pre>
+<p>Then point it at your own model: <code>./bf generate --mesh model.stl --out runs/mine --max-pieces 120</code>. The <a href="https://github.com/yogyam/BrickForge/blob/main/docs/demo.md">walkthrough</a> explains every output file and every option.</p>
+
+<h2>The viewer</h2>
+<p>This is the same viewer that ships with the code, loading a real example build. Drag to turn it, scroll to zoom, and use the slider or the arrow keys to add one brick at a time. The small blue dots are the cells of the target shape, so you can see where the build falls short. The line under the buttons says whether each partial build is stable under the force model.</p>
+<div class="toggle" role="group" aria-label="example build">
+  <button id="btn-greedy" aria-pressed="true">Hand-written search, 75 bricks</button>
+  <button id="btn-rl" aria-pressed="false">Learned network, 67 bricks</button>
+</div>
+<figure style="margin-top:0">
+  <iframe id="viewer-frame" title="BrickForge viewer with an example sphere build" src="viewer/index.html?build=../docs/examples/sphere/build.json&amp;voxels=../docs/examples/sphere/voxels.json&amp;stability=../docs/examples/sphere/stability.json" loading="lazy"></iframe>
+  <figcaption>The same sphere built two ways. The viewer draws exactly the stored bricks and nothing else. "Stable" here means stable under the simplified static force model; no build has been physically tested.</figcaption>
+</figure>
+
+<h2>How it works</h2>
+<ol class="steps">
+  <li><b>Snap to a grid.</b> The mesh is turned upright, scaled to fit, and tested at the centre of every cell of a 16 × 16 × 8 grid. Each of the 2048 cells is either inside the shape or not. From here on, this grid is the shape.</li>
+  <li><b>Place bricks.</b> One of the three methods picks one brick at a time from six types (1×1 up to 2×4). It may only choose <i>legal</i> placements: inside the grid, not overlapping, resting on the ground or on a brick below, covering at least one target cell, and not mostly filler.</li>
+  <li><b>Trim.</b> Bricks connect only through studs. Anything not connected to the ground is dropped, so the result is one object you could pick up.</li>
+  <li><b>Plan.</b> An assembly order is computed, one brick per step, each lowered straight down onto what is already there.</li>
+  <li><b>Check.</b> An independent checker replays the steps and confirms every rule again.</li>
+  <li><b>Stability.</b> A simple force model (a linear version of <a href="https://arxiv.org/abs/2402.10711">StableLego</a>) asks whether the stud joints can carry the weight, for the final build and after every step.</li>
+</ol>
+<p>Steps 3 to 6 are the same for all three methods. Only step 2 changes, which is what makes the comparison fair.</p>
+
+<h2>Three ways to pick the bricks</h2>
+<p>The <b>hand-written search</b> works layer by layer from the ground up and always grabs the brick that covers the most still-empty cells, preferring the hard-to-reach ones. It is deterministic and fast, and it is the baseline.</p>
+<p>The <b>learned network</b> is tiny by today's standards: about 100,000 parameters, where a small language model has billions. It looks at the grid, the bricks placed so far and the list of legal next placements, and scores each placement. It was trained in two stages. First it learned to imitate the search's choices on about a thousand real meshes and a set of synthetic shapes ("imitation", or SFT). Then it was fine-tuned with <b>reinforcement learning</b>: it built shapes on its own, was rewarded for how well the finished build matched the target, and nudged its scoring accordingly (we use PPO, a standard recipe). The whole thing trained in about three hours on a laptop.</p>
+
+<h2>Results</h2>
+<p>All three were run on the same 53 held-out shapes, 13 simple procedural ones and 40 Creative Commons meshes from Thingi10K, at budgets of 50, 100 and 200 bricks. The score is <b>IoU</b>, intersection over union: how many cells the build and the target have in common, divided by how many either of them has. 1.0 is a perfect match. A build that fails scores 0, which is stricter than the usual practice of only scoring the builds that worked.</p>
+<table>
+  <tr><th>Method</th><th class="num">50 bricks</th><th class="num">100 bricks</th><th class="num">200 bricks</th><th class="num">Valid</th><th class="num">Stable*</th></tr>
+  <tr><td>Hand-written search</td><td class="num">0.621</td><td class="num">0.696</td><td class="num"><span class="hl">0.705</span></td><td class="num">51 / 53</td><td class="num">49 / 53</td></tr>
+  <tr><td>Learned network, imitation only</td><td class="num">0.566</td><td class="num">0.653</td><td class="num">0.662</td><td class="num">49 / 53</td><td class="num">48 / 53</td></tr>
+  <tr><td>Learned network, imitation + reinforcement learning</td><td class="num">0.609</td><td class="num">0.682</td><td class="num"><span class="hl">0.693</span></td><td class="num">51 / 53</td><td class="num">49 / 53</td></tr>
+</table>
+<p style="color:var(--ink2);font-size:0.9em">Mean IoU over the 52 shapes that can be attempted. The two learned rows average two training runs with different random seeds. *Stable under the simplified static force model; not physically tested. Two shapes are invalid on purpose (an open mesh and a one-cell-thin pole), so 51 is the best possible.</p>
+<p>Three things stand out. The learned network lands within 0.012 of the search it learned from, matches it on the simple shapes, and gets the same validity and stability counts; a second training run from a different random start lands on the same number. Reinforcement learning is what closed most of the gap: it adds 0.03 over imitation alone and beats it head to head on 26 shapes while losing on 3. And the piece budget matters less than you might think: fidelity barely moves from 100 to 200 bricks for any method, because builds stop when there is no legal placement left, long before the cap.</p>
+
+<figure>
+  <img src="paper/figures/gallery.png" alt="Six benchmark shapes, each shown as the target cells, the hand-written build and the learned build" width="1518" height="1650">
+  <figcaption>Six benchmark shapes at the 200-brick budget: target, hand-written search, learned network. Thin and hollow objects break into islands at this grid size; the trim keeps the largest one and reports what was dropped.</figcaption>
+</figure>
+
+<h2>What did not work</h2>
+<p>The network has a <b>"stop" action</b>, a way to say "I'm done". After imitation and after reinforcement learning it still fires too early on real meshes, sometimes before placing a single brick. The numbers above <span class="warn">mask the stop action</span> and let the build run until no legal placement is left, which is the search's stopping rule. That decision was made on a separate validation split, never on the benchmark. A network that knows when it is finished is future work.</p>
+<p>A <b>stability bonus in the reward</b> did nothing. Training a second network with the bonus removed gave the same number of stable builds, because the legality rules and the trim already produce stable structures in this setting. The bonus might matter for harder settings (plates, overhangs, bigger grids), which we have not tried.</p>
+
+<h2>Caveats</h2>
+<p>The world is small: one grid size, solid fill, six upright bricks, one colour, no plates or slopes. Thin objects occupy only a few dozen of the 2048 cells and fragment. The hand-written search cannot reach overhangs wider than one brick and reports them as uncovered rather than faking them. The learned network was taught by the search and fine-tuned with a leash to it, so "learned versus hand-written" is really "learned from hand-written"; it got better at the search's style, it did not find a new one. Stability is a model, not a test: the force model ignores friction and bending, uses a clutch strength from the literature, and is conservative. Fifty-two shapes and two training seeds are enough to see differences, not to prove small ones; anything under about 0.02 should be read as observed, not established. Decoding is deterministic and runs on the CPU.</p>
+
+<h2>Cite</h2>
+<pre><code>@misc{mehrotra2026brickforge,
+  title  = {BrickForge: Learning to Build Brick Models Under a Piece Budget},
+  author = {Mehrotra, Yogya},
+  year   = {2026},
+  note   = {Draft. Code and benchmark records at https://github.com/yogyam/BrickForge}
+}</code></pre>
+
+<div class="foot">
+  <p><b>Yogya Mehrotra</b> · <a href="https://github.com/yogyam">github.com/yogyam</a></p>
+  <p>Code, docs and the two released checkpoints are MIT licensed. The Thingi10K meshes are not redistributed; the benchmark manifest records each model's own licence. Everything here was trained and run on one laptop. LEGO is a trademark of the LEGO Group, which does not sponsor or endorse this project.</p>
+</div>
+
+</div>
+<script>
+  const frame = document.getElementById('viewer-frame');
+  const src = ex => `viewer/index.html?build=../docs/examples/${ex}/build.json&voxels=../docs/examples/${ex}/voxels.json&stability=../docs/examples/${ex}/stability.json`;
+  for (const [id, ex] of [['btn-greedy', 'sphere'], ['btn-rl', 'sphere_rl']]) {
+    document.getElementById(id).addEventListener('click', () => {
+      frame.src = src(ex);
+      for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.id === id));
+    });
+  }
+</script>
+</body>
+</html>
