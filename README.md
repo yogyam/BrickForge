@@ -35,6 +35,10 @@ make demo       # builds a sphere, shows an intentional failure, then builds the
 
 The full hands-on tour, with every output explained, is [`docs/demo.md`](docs/demo.md).
 
+![make demo running in a terminal: fixtures, the sphere build, the intentional failure, the learned policy](docs/media/terminal_make_demo.gif)
+
+![The viewer stepping through the sphere assembly and orbiting the finished build](docs/media/viewer_sphere_steps.gif)
+
 Then build something of your own:
 
 ```sh

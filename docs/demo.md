@@ -28,6 +28,8 @@ the folder is synced by iCloud (`~/Desktop` and `~/Documents` usually are), a vi
 make demo
 ```
 
+![make demo running in a terminal](media/terminal_make_demo.gif)
+
 This does four things:
 
 1. Regenerates the 13 fixture meshes in `fixtures/meshes/` from code (they are tiny, and byte-identical to the
@@ -116,6 +118,8 @@ Open [`viewer/index.html`](../viewer/index.html) by double-clicking it. No serve
    the current step, whether that partial build is stable under the force model and how close its worst stud joint
    is to its limit.
 
+![Stepping through the sphere build and orbiting it in the viewer](media/viewer_sphere_steps.gif)
+
 Drag to orbit, scroll to zoom, right-drag to pan. The slider, the Previous/Next buttons and the left/right arrow
 keys step through the assembly one brick at a time; the newest brick is drawn slightly brighter. "All" jumps to
 the finished build.
@@ -143,6 +147,10 @@ On the sphere at 100 pieces:
 | `greedy_v1` | hand-written search, layer by layer | 0.974 | 75 | 0.17 s |
 | `sft_v2` | 100k-parameter network trained to imitate the search | 0.959 | 69 | 1.3 s |
 | `rl_v2_nostop` | the same network after reinforcement learning, stop action masked | 0.957 | 67 | 0.35 s |
+
+| greedy search, 75 pieces | learned policy after RL, 67 pieces |
+|---|---|
+| ![greedy sphere in the viewer](media/viewer_sphere_greedy.png) | ![RL sphere in the viewer](media/viewer_sphere_rl.png) |
 
 The two checkpoints `checkpoints/sft_v2.pt` and `checkpoints/rl_v2.pt` are committed (about 400 KB each) so this
 comparison works from a fresh clone. All three builds are stable under the simplified static force model; none has
@@ -214,6 +222,10 @@ The tools are `list_fixtures`, `generate` (same flags as the CLI, including `gen
 | `make test` fails on `test_rl.py` | an old checkout; the test now skips without torch | `git pull`, or `make test-ml` |
 
 ## 12. Where next
+
+The pictures on this page are captured from the real demo by `scripts/capture_demo_media.py` (headless Chromium
+driving the actual viewer, plus a recorded `make demo` transcript); rerun it after changing the viewer or the demo.
+
 
 - The README's research section and results table.
 - [`docs/rl.md`](rl.md) and [`docs/sft.md`](sft.md) for how the learned policies were trained and what did not work.
